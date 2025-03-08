@@ -16,7 +16,11 @@ class App:
     
     def update_label(self):
         try:
-            response = requests.get("http://127.0.0.1:8000/data")
+            data = {
+                "user": "user2"
+            }
+
+            response = requests.post("http://127.0.0.1:8000/data", json=data)
             response.raise_for_status()  # Lanza error si hay un error HTTP
             
             content = response.text
