@@ -18,14 +18,31 @@ def decode_base64(encoded_text):
 
 @app.post("/data")
 async def Data(data: UpdateChat):
-    conn = sqlite3.connect("chatwei.db")
-    cursor = conn.cursor()
+    try:
+        conn = sqlite3.connect("chatwei.db")
+        cursor = conn.cursor()
 
-    cursor.execute(f"""
-SELECT message FROM data WHERE receiver = '{data.user}' AND isSend = 0;
-""")
-    resultados = cursor.fetchall()
-    return resultados
+        cursor.execute(f"""
+    SELECT * FROM data 
+    WHERE receiver = '{data.user}' AND isSend = 0 
+    LIMIT 1;
+    """)
+        resultados = cursor.fetchall()
+
+        
+        cursor.execute(f"""
+    UPDATE data
+    SET isSend = 1
+    WHERE id = '{resultados[0][0]}'
+    """)
+        
+        
+        conn.commit()
+        conn.close()
+
+        return resultados[0][3]
+    except Exception:
+        return False
 
 @app.post("/send")
 async def Send(data: SendChat):
@@ -42,8 +59,8 @@ async def Send(data: SendChat):
     mesMessage = mes[4].split("=")[1]
 
     cursor.execute(f"""
-INSERT INTO data (id, sender, receiver, message, isSend)
-VALUES ('{mesId}', '{mesSender}', '{mesReceiver}', '{mesMessage}', 0)
+INSERT INTO data (id, sender, receiver, message, time, isSend)
+VALUES ('{mesId}', '{mesSender}', '{mesReceiver}', '{mesMessage}', '{mesTime}', 0)
 """)
     conn.commit()
     conn.close()
