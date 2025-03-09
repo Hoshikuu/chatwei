@@ -7,6 +7,9 @@ from weicore.cweiFormater import formater
 from datetime import datetime
 from requests import post
 
+from time import sleep
+from json import loads
+
 class ChatApp:
     def __init__(self, root):
         self.root = root
@@ -61,6 +64,11 @@ class ChatApp:
         # Alineación por defecto
         self.alignment = "left"
 
+        self.no_history = True
+        self.history()
+        while self.no_history:
+            sleep(1)
+
         self.update_message()
 
     def set_alignment(self, alignment):
@@ -71,9 +79,9 @@ class ChatApp:
         if message:
             # Cambia los usuarios
             data = {
-                "data": encodeb64(formater("user1", "user2", datetime.now().strftime("%Y-%m-%d-%H-%M-%S"), message))
+                "data": encodeb64(formater(myUser, otherUser, datetime.now().strftime("%Y-%m-%d-%H-%M-%S-%f"), message))
             }
-            post("http://127.0.0.1:8000/send", json=data)
+            post("http://chatwei.ddns.net:19280/send", json=data)
 
             self.set_alignment("left")
             self.display_message(message, self.alignment)
@@ -97,20 +105,40 @@ class ChatApp:
 
     def update_message(self):
         data = {
-            "user": "user1"
+            "user": myUser
         }
 
-        response = post("http://127.0.0.1:8000/data", json=data)
+        response = post("http://chatwei.ddns.net:19280/data", json=data)
         
         content = response.text
 
         if content != "false":
-            self.set_alignment("right")
-            self.display_message(content.replace('"', ''), self.alignment)
+            self.display_message(content.replace('"', ''), "right")
 
-        self.root.after(1000, self.update_message)
+        self.root.after(500, self.update_message)
+
+    def history(self):
+        data = {
+            "user": myUser
+        }
+
+        response = post("http://chatwei.ddns.net:19280/history", json=data)
+        
+        content = loads(response.text)
+
+        for message in content:
+            if message[1] == myUser:
+                self.display_message(message[3], "left")
+            else:
+                self.display_message(message[3], "right")
+
+        self.no_history = False
 
 if __name__ == "__main__":
+
+    myUser = "user1"
+    otherUser = "user2"
+
     root = tk.Tk()
     app = ChatApp(root)
     root.mainloop()

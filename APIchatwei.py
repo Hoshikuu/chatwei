@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
-import os
-import sqlite3
+from os import system
+from sqlite3 import connect
 from weicore.coder import decodeb64
 
 app = FastAPI()
@@ -13,8 +13,11 @@ class UpdateChat(BaseModel):
 class SendChat(BaseModel):
     data: str
 
+class HistoryRecovery(BaseModel):
+    user: str
+
 def GetMessage(user):
-    conn = sqlite3.connect(database)
+    conn = connect(database)
     cursor = conn.cursor()
     
     sql = f"""
@@ -30,7 +33,7 @@ def GetMessage(user):
     return resultados
 
 def SetIsSend(id):
-    conn = sqlite3.connect(database)
+    conn = connect(database)
     cursor = conn.cursor()
     
     sql = f"""
@@ -44,7 +47,7 @@ def SetIsSend(id):
     conn.close()
 
 def AddMessage(data):
-    conn = sqlite3.connect(database)
+    conn = connect(database)
     cursor = conn.cursor()
 
     mes = decodeb64(data).split("\n")
@@ -63,6 +66,9 @@ VALUES ('{mesId}', '{mesSender}', '{mesReceiver}', '{mesMessage}', '{mesTime}', 
     conn.commit()
     conn.close()
 
+# def GetHistory(user):
+
+
 @app.post("/data")
 async def Data(data: UpdateChat):
     try:
@@ -77,6 +83,26 @@ async def Data(data: UpdateChat):
 async def Send(data: SendChat):
     AddMessage(data.data)
 
+@app.post("/history")
+async def HistoryRecovery(data: HistoryRecovery):
+    print(data)
+
+    conn = connect(database)
+    cursor = conn.cursor()
+
+    sql = f"""
+SELECT * FROM data 
+WHERE receiver = '{data.user}' OR sender = '{data.user}' AND isSend = 1 
+ORDER BY time ASC;
+"""
+
+    cursor.execute(sql)
+    resultados = cursor.fetchall()
+    print(resultados)
+    conn.commit()
+    conn.close()
+    return resultados
+
 if __name__ == "__main__":
-    os.system("fastapi dev " + __file__)
+    system("fastapi dev " + __file__)
     
