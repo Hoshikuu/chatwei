@@ -14,16 +14,36 @@ class ChatApp:
     def __init__(self, root):
         self.root = root
         self.root.title("Chat")
-        self.root.geometry("400x500")
+        self.root.geometry("600x500")  # Aumentamos el ancho para acomodar el menú
         self.root.configure(bg="#1e1e1e")  # Fondo oscuro
 
         # Fuente moderna
         self.font = ("Segoe UI", 10)
         self.bold_font = ("Segoe UI", 10, "bold")
 
+        # Lista de chats disponibles (puede ser dinámica)
+        self.chats = ["Chat 1", "Chat 2", "Chat 3"]  # Ejemplo inicial
+        self.current_chat = None  # Chat seleccionado actualmente
+
+        # Frame principal que contendrá el chat y el menú
+        self.main_frame = tk.Frame(root, bg="#1e1e1e")
+        self.main_frame.pack(fill=tk.BOTH, expand=True)
+
+        # Frame para el menú a la izquierda
+        self.menu_frame = tk.Frame(self.main_frame, bg="#252526", width=150)
+        self.menu_frame.pack(side=tk.LEFT, fill=tk.Y, expand=False)
+
+        # Añadir elementos al menú
+        self.menu_label = tk.Label(self.menu_frame, text="Chats", font=self.bold_font, bg="#252526", fg="#ffffff")
+        self.menu_label.pack(pady=10)
+
+        # Botones dinámicos para los chats
+        self.chat_buttons = []
+        self.update_chat_buttons()
+
         # Frame para los mensajes
-        self.message_frame = tk.Frame(root, bg="#1e1e1e")
-        self.message_frame.pack(fill=tk.BOTH, expand=True)
+        self.message_frame = tk.Frame(self.main_frame, bg="#1e1e1e")
+        self.message_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
 
         # Scrollbar
         self.scrollbar = tk.Scrollbar(self.message_frame)
@@ -66,8 +86,8 @@ class ChatApp:
 
         self.no_history = True
         self.history()
-        while self.no_history:
-            sleep(1)
+        # while self.no_history:
+        #     sleep(1)
 
         self.update_message()
 
@@ -75,6 +95,10 @@ class ChatApp:
         self.alignment = alignment
 
     def send_message(self, event=None):
+        if self.current_chat is None:
+            print("Selecciona un chat primero")
+            return
+
         message = self.entry.get()
         if message:
             # Cambia los usuarios
@@ -86,11 +110,6 @@ class ChatApp:
             self.set_alignment("left")
             self.display_message(message, self.alignment)
             self.entry.delete(0, tk.END)
-
-            # response = post("http://127.0.0.1:8000/send", json=data)
-            # response.raise_for_status()  # Lanza error si hay un error HTTP
-            
-            # content = response.text
 
     def display_message(self, message, alignment):
         self.message_area.config(state=tk.NORMAL)
@@ -104,6 +123,10 @@ class ChatApp:
         self.message_area.yview(tk.END)  # Desplazar al final
 
     def update_message(self):
+        if self.current_chat is None:
+            self.root.after(500, self.update_message)
+            return
+
         data = {
             "user": myUser
         }
@@ -118,6 +141,9 @@ class ChatApp:
         self.root.after(500, self.update_message)
 
     def history(self):
+        if self.current_chat is None:
+            return
+
         data = {
             "user": myUser
         }
@@ -133,6 +159,36 @@ class ChatApp:
                 self.display_message(message[3], "right")
 
         self.no_history = False
+
+    def update_chat_buttons(self):
+        # Limpiar botones existentes
+        for button in self.chat_buttons:
+            button.destroy()
+        self.chat_buttons.clear()
+
+        # Crear nuevos botones para cada chat
+        for chat in self.chats:
+            button = tk.Button(
+                self.menu_frame, text=chat, font=self.font, bg="#0078d7", fg="white", relief=tk.FLAT,
+                command=lambda c=chat: self.select_chat(c)
+            )
+            button.pack(pady=5, padx=10, fill=tk.X)
+            self.chat_buttons.append(button)
+
+    def select_chat(self, chat_name):
+        self.current_chat = chat_name
+        print(f"Chat seleccionado: {chat_name}")
+        # Limpiar el área de mensajes
+        self.message_area.config(state=tk.NORMAL)
+        self.message_area.delete(1.0, tk.END)
+        self.message_area.config(state=tk.DISABLED)
+        # Cargar el historial del chat seleccionado
+        self.history()
+
+    def add_chat(self, chat_name):
+        if chat_name not in self.chats:
+            self.chats.append(chat_name)
+            self.update_chat_buttons()
 
 if __name__ == "__main__":
 

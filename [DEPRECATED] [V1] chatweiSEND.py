@@ -1,7 +1,7 @@
 import tkinter as tk
 import requests
-from functions.coder import encodeb64
-from functions.cweiFormater import formater
+from weicore.coder import encodeb64
+from weicore.cweiFormater import formater
 
 class App:
     def __init__(self, root):
