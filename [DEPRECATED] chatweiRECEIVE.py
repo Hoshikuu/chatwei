@@ -1,18 +1,19 @@
 import tkinter as tk
-import requests
-from base64 import b64encode
-from functions.cweiFormater import formater
+from requests import post
 from datetime import datetime
+
+from weicore.coder import encodeb64
+from weicore.cweiFormater import formater
 
 class App:
     def __init__(self, root):
         self.root = root
-        self.root.title("Solicitudes GET en tiempo real")
+        self.root.title("CHATWEI")
         self.root.geometry("600x400")
         
         # Etiqueta para mostrar el resultado
-        self.result_label = tk.Label(root, text="", font=("Arial", 12))
-        self.result_label.pack(pady=20)
+        self.message = tk.Label(root, text="", font=("Arial", 12))
+        self.message.pack(pady=20)
 
         self.message_camp = tk.Entry(root, text="", font=("Arial", 12))
         self.message_camp.pack(pady=20)
@@ -22,10 +23,6 @@ class App:
         
         # Iniciar la primera actualización
         self.update_label()
-    
-    def encode_base64(self, text):
-        encoded_bytes = b64encode(text.encode('utf-8'))
-        return encoded_bytes.decode('utf-8')
 
     def update_label(self):
         try:
@@ -33,31 +30,31 @@ class App:
                 "user": "user2"
             }
 
-            response = requests.post("http://127.0.0.1:8000/data", json=data)
+            response = post("http://127.0.0.1:8000/data", json=data)
             response.raise_for_status()  # Lanza error si hay un error HTTP
             
             content = response.text
 
             if content == "false":
-                raise requests.exceptions.RequestException
+                raise Exception
             
             # Actualiza el Label
             self.result_label.config(text=content)
             
-        except requests.exceptions.RequestException as e:
+        except Exception as e:
             pass
         self.root.after(1000, self.update_label)
     
     def send_message(self):
         try:
             message = self.message_camp.get()
-            mes = self.encode_base64(formater("user1", "user2", datetime.now().strftime("%Y-%m-%d-%H-%M-%S"), message))
+            mes = encodeb64(formater("user1", "user2", datetime.now().strftime("%Y-%m-%d-%H-%M-%S"), message))
 
             data = {
                 "data": mes
             }
 
-            response = requests.post("http://127.0.0.1:8000/send", json=data)
+            response = post("http://127.0.0.1:8000/send", json=data)
             response.raise_for_status()  # Lanza error si hay un error HTTP
             
             content = response.text
@@ -65,7 +62,7 @@ class App:
             # Actualiza el Label
             self.result_label.config(text=content)
             
-        except requests.exceptions.RequestException as e:
+        except Exception as e:
             pass
 
 if __name__ == "__main__":

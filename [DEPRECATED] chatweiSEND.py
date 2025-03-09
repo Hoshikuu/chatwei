@@ -1,6 +1,6 @@
 import tkinter as tk
 import requests
-from base64 import b64encode, b64decode
+from functions.coder import encodeb64
 from functions.cweiFormater import formater
 
 class App:
@@ -15,15 +15,11 @@ class App:
         
         self.send_button = tk.Button(root, text="SEND", font=("Arial", 12), command=self.update_label)
         self.send_button.pack(pady=20)
-    
-    def encode_base64(self, text):
-        encoded_bytes = b64encode(text.encode('utf-8'))
-        return encoded_bytes.decode('utf-8')
 
-    def update_label(self):
+    def send_message(self):
         try:
             message = self.result_label.get()
-            mes = self.encode_base64(formater("user1", "user2", "2025-03-06-00-16-32", message))
+            mes = encodeb64(formater("user1", "user2", "2025-03-06-00-16-32", message))
 
             data = {
                 "data": mes
