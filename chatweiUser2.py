@@ -81,7 +81,7 @@ class ChatApp:
             data = {
                 "data": encodeb64(formater(myUser, otherUser, datetime.now().strftime("%Y-%m-%d-%H-%M-%S-%f"), message))
             }
-            post("http://chatwei.ddns.net:19280/send", json=data)
+            post(APIurl + "send", json=data)
 
             self.set_alignment("left")
             self.display_message(message, self.alignment)
@@ -108,7 +108,7 @@ class ChatApp:
             "user": myUser
         }
 
-        response = post("http://chatwei.ddns.net:19280/data", json=data)
+        response = post(APIurl + "data", json=data)
         
         content = response.text
 
@@ -122,7 +122,7 @@ class ChatApp:
             "user": myUser
         }
 
-        response = post("http://chatwei.ddns.net:19280/history", json=data)
+        response = post(APIurl + "history", json=data)
         
         content = loads(response.text)
 
@@ -138,6 +138,8 @@ if __name__ == "__main__":
 
     myUser = "user2"
     otherUser = "user1"
+    APIurl = "http://127.0.0.1:8000/"
+    # APIurl = "http://chatwei.ddns.net:19280/"
 
     root = tk.Tk()
     app = ChatApp(root)
