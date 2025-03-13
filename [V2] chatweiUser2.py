@@ -96,10 +96,10 @@ class ChatApp:
         self.message_area.config(state=tk.NORMAL)
         if alignment == "left":
             self.message_area.insert(tk.END, "Tú\n", "sender")
-            self.message_area.insert(tk.END, f"{message}\n\n", "left")
+            self.message_area.insert(tk.END, f"{message}\n", "left")
         else:
             self.message_area.insert(tk.END, "Otro\n", "sender")
-            self.message_area.insert(tk.END, f"{message}\n\n", "right")
+            self.message_area.insert(tk.END, f"{message}\n", "right")
         self.message_area.config(state=tk.DISABLED)
         self.message_area.yview(tk.END)  # Desplazar al final
 
