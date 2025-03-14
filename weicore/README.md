@@ -1,10 +1,10 @@
-# Módulo central de ChatWei
+# Core Module for ChatWei  
 
-Este módulo contiene tres componentes esenciales para el funcionamiento de ChatWei:
+This module contains three essential components for ChatWei:  
 
-- **coder.py**: Convierte texto a base64.  
-- **cweiFormatter.py**: Formatea el texto en archivos ChatWei (.cwei).  
-- **weicipCore.py**: Núcleo de CipWei para encriptación. Basado en [CipWei](https://github.com/Hoshikuu/cipwei).  
+- **coder.py**: Converts text to base64.  
+- **cweiFormatter.py**: Formats text into ChatWei (.cwei) files.  
+- **weicipCore.py**: Core of CipWei for encryption. Based on [CipWei](https://github.com/Hoshikuu/cipwei).  
 
-Este módulo ha sido creado y es propiedad de **Hoshiku**.  
-Repositorio oficial: [GitHub - Hoshikuu](https://github.com/Hoshikuu)
+This module was created and is owned by **Hoshiku**.  
+Official repository: [GitHub - Hoshikuu](https://github.com/Hoshikuu)  

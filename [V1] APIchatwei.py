@@ -7,22 +7,20 @@ from weicore.coder import decodeb64
 app = FastAPI()
 database = "database/chatwei.db"
 
-class UpdateChat(BaseModel):
+class Default(BaseModel):
     user: str
+    otherUser: str
 
 class SendChat(BaseModel):
     data: str
 
-class HistoryRecovery(BaseModel):
-    user: str
-
-def GetMessage(user):
+def GetMessage(user, otherUser):
     conn = connect(database)
     cursor = conn.cursor()
     
     sql = f"""
     SELECT * FROM data 
-    WHERE receiver = '{user}' AND isSend = 0 
+    WHERE receiver = '{user}' AND sender = '{otherUser}' AND isSend = 0 
     LIMIT 1;
     """
 
@@ -66,16 +64,13 @@ VALUES ('{mesId}', '{mesSender}', '{mesReceiver}', '{mesMessage}', '{mesTime}', 
     conn.commit()
     conn.close()
 
-# def GetHistory(user):
-
-
 @app.post("/data")
-async def Data(data: UpdateChat):
+async def Data(data: Default):
     try:
-        message = GetMessage(data.user)[0]
+        message = GetMessage(data.user, data.otherUser)[0]
         SetIsSend(message[0])
 
-        return message[3]
+        return message
     except Exception:
         return False
 
@@ -83,26 +78,43 @@ async def Data(data: UpdateChat):
 async def Send(data: SendChat):
     AddMessage(data.data)
 
-@app.post("/history")
-async def HistoryRecovery(data: HistoryRecovery):
-    print(data)
-
+@app.post("/last")
+async def Send(data: Default):
     conn = connect(database)
     cursor = conn.cursor()
 
     sql = f"""
 SELECT * FROM data 
-WHERE receiver = '{data.user}' OR sender = '{data.user}' AND isSend = 1 
+WHERE receiver = '{data.user}' AND sender = '{data.otherUser}' AND isSend = 1 OR receiver = '{data.otherUser}' AND sender = '{data.user}'
+ORDER BY time DESC LIMIT 1;
+"""
+    
+    cursor.execute(sql)
+    resultados = cursor.fetchall()
+    conn.commit()
+    conn.close()
+    print(resultados)
+    if resultados != "":
+        return resultados
+    return ""
+
+@app.post("/history")
+async def HistoryRecovery(data: Default):
+    conn = connect(database)
+    cursor = conn.cursor()
+
+    sql = f"""
+SELECT * FROM data 
+WHERE receiver = '{data.user}' AND sender = '{data.otherUser}' AND isSend = 1 OR receiver = '{data.otherUser}' AND sender = '{data.user}'
 ORDER BY time ASC;
 """
 
     cursor.execute(sql)
     resultados = cursor.fetchall()
-    print(resultados)
     conn.commit()
     conn.close()
     return resultados
 
 if __name__ == "__main__":
-    system("fastapi dev " + __file__)
+    system(f'fastapi dev "{__file__}"')
     

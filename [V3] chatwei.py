@@ -1,13 +1,18 @@
 import tkinter as tk
 from tkinter import ttk
-import datetime
+from datetime import datetime
+import requests
+import json
+
+from weicore.coder import encodeb64
+from weicore.cweiFormater import formater
 
 class ChatApp:
     def __init__(self, root):
         self.root = root
-        self.root.title("Chat App")
+        self.root.title("chatwei")
         self.root.geometry("900x600")
-        self.root.minsize(800, 500)
+        self.root.minsize(900, 600)
         
         # Colores para el modo oscuro
         self.bg_dark = "#1E1E1E"
@@ -33,18 +38,13 @@ class ChatApp:
         self.create_chat_area()
         self.create_input_area()
         
+        self.otherUser = ""
+        self.update_message()
+
         # Datos de ejemplo
         self.chats = [
-            {"name": "Juan García", "last_message": "Hola, ¿cómo estás?", "time": "10:30"},
-            {"name": "Ana López", "last_message": "¿Nos vemos mañana?", "time": "09:15"},
-            {"name": "Grupo Trabajo", "last_message": "María: Enviaré el informe", "time": "Ayer"},
-            {"name": "Carlos Martínez", "last_message": "Gracias por la información", "time": "Lunes"},
-            {"name": "Sofía Pérez", "last_message": "¿Viste las fotos?", "time": "Ayer"},
-            {"name": "Miguel Rodríguez", "last_message": "Te llamaré más tarde", "time": "Martes"},
-            {"name": "Elena Gómez", "last_message": "¿Tienes el documento?", "time": "Lunes"},
-            {"name": "Pablo Sánchez", "last_message": "Nos vemos a las 5", "time": "Miércoles"},
-            {"name": "Lucía Fernández", "last_message": "Me encantó el libro", "time": "Domingo"},
-            {"name": "Daniel Ruiz", "last_message": "¿Puedes enviarme el enlace?", "time": "Jueves"}
+            {"name": "user2", "last_message": self.get_last_message("user2"), "time": self.get_last_time("user2")},
+            {"name": "user1", "last_message": self.get_last_message("user1"), "time": self.get_last_time("user1")},
         ]
         
         # Añadir chats de ejemplo
@@ -52,8 +52,24 @@ class ChatApp:
             self.add_chat_button(chat["name"], chat["last_message"], chat["time"])
         
         # Chat actual
-        self.current_chat = "Juan García"
+        self.current_chat = "Hola"
         
+    def get_last_message(self, otherUser):
+        response = requests.post(APIurl + "last", json={"user": myUser, "otherUser": otherUser})
+        if response.text == "":
+            return ""
+
+        content = json.loads(response.text)
+        return "'" + content[3] + "'"
+
+    def get_last_time(self, otherUser):
+        response = requests.post(APIurl + "last", json={"user": myUser, "otherUser": otherUser})
+        if response.text == "":
+            return ""
+
+        content = json.loads(response.text)
+        return "'" + content[4] + "'"
+    
     def create_scrollbar_style(self):
         # Estilo para los widgets
         self.style = ttk.Style()
@@ -163,7 +179,7 @@ class ChatApp:
         self.chat_title_frame = tk.Frame(self.right_frame, bg=self.bg_dark)
         self.chat_title_frame.pack(fill=tk.X, pady=(0, 10))
         
-        self.chat_title = tk.Label(self.chat_title_frame, text="Juan García", font=("Helvetica", 12, "bold"),
+        self.chat_title = tk.Label(self.chat_title_frame, text="", font=("Helvetica", 12, "bold"),
                                 bg=self.bg_dark, fg=self.text_color)
         self.chat_title.pack(side=tk.LEFT, padx=10)
         
@@ -183,24 +199,24 @@ class ChatApp:
         
         # Frame dentro del canvas para contener los mensajes
         self.messages_frame = tk.Frame(self.chat_canvas, bg=self.bg_chat)
-        self.chat_canvas.create_window((0, 0), window=self.messages_frame, anchor="nw", tags="self.messages_frame")
+        self.chat_canvas_window = self.chat_canvas.create_window((0, 0), window=self.messages_frame, anchor="nw", tags="self.messages_frame")
         
+        # Configurar el tamaño del frame de mensajes y la región de desplazamiento
         self.messages_frame.bind("<Configure>", self.on_frame_configure)
         self.chat_canvas.bind("<Configure>", self.on_canvas_configure)
         
-        # Añadir algunos mensajes de ejemplo
-        self.add_message("Hola, ¿cómo estás?", "Juan García", False)
-        self.add_message("¡Hola! Estoy bien, ¿y tú?", "Tú", True)
-        self.add_message("Muy bien, gracias. ¿Te gustaría reunirnos mañana?", "Juan García", False)
-        self.add_message("Claro, me parece bien. ¿A qué hora?", "Tú", True)
+        # Asegurar que se vea el último mensaje
+        self.root.update_idletasks()
+        self.chat_canvas.yview_moveto(1.0)
         
     def on_frame_configure(self, event):
+        # Actualizar la región de desplazamiento del canvas cuando el frame cambia de tamaño
         self.chat_canvas.configure(scrollregion=self.chat_canvas.bbox("all"))
-        self.root.update_idletasks() 
-        self.chat_canvas.yview_moveto(1.0)  # Mover al final después de configurar
         
     def on_canvas_configure(self, event):
-        self.chat_canvas.itemconfig("self.messages_frame", width=event.width)
+        # Ajustar el ancho del frame de mensajes al ancho del canvas
+        canvas_width = event.width
+        self.chat_canvas.itemconfig(self.chat_canvas_window, width=canvas_width)
 
     def create_input_area(self):
         # Área de entrada de mensajes
@@ -232,13 +248,19 @@ class ChatApp:
     def send_message(self):
         message = self.message_entry.get("1.0", tk.END).strip()
         if message:
-            self.add_message(message, "Tú", True)
+            self.add_message(message, "Tú", True, datetime.now().strftime("%Y-%m-%d-%H-%M-%S-%f"))
+
+            data = {
+                "data": encodeb64(formater(myUser, self.otherUser, datetime.now().strftime("%Y-%m-%d-%H-%M-%S-%f"), message))
+            }
+            requests.post(APIurl + "send", json=data)
+
             self.message_entry.delete("1.0", tk.END)
             # Asegurar que el scroll baje completamente para mostrar el mensaje más reciente
             self.root.update_idletasks()  # Actualizar la interfaz para que se creen los widgets
             self.chat_canvas.yview_moveto(1.0)  # Mover al final
-    
-    def add_message(self, text, sender, is_sent):
+
+    def add_message(self, text, sender, is_sent, current_time):
         # Crear el marco del mensaje
         message_frame = tk.Frame(self.messages_frame, bg=self.bg_chat)
         message_frame.pack(fill=tk.X, pady=5, padx=10)
@@ -246,21 +268,26 @@ class ChatApp:
         # Alineación según si es enviado o recibido
         align = tk.RIGHT if is_sent else tk.LEFT
         
-        # Marco interno para el contenido del mensaje
+        # Crear un marco para el mensaje con esquinas redondeadas
+        bubble_bg = self.message_sent_bg if is_sent else self.message_received_bg
+        
+        # Utilizamos un Frame con relief para dar un efecto de bordes suavizados
         bubble_frame = tk.Frame(message_frame, 
-                               bg=self.message_sent_bg if is_sent else self.message_received_bg,
-                               padx=10, pady=5)
+                               bg=bubble_bg,
+                               padx=10, pady=5,
+                               borderwidth=1,
+                               relief=tk.GROOVE)  # GROOVE da un efecto ligeramente redondeado
         bubble_frame.pack(side=align, anchor=tk.NE if is_sent else tk.NW)
         
         # Texto del mensaje
         message_text = tk.Label(bubble_frame, text=text, wraplength=350, justify=tk.LEFT,
-                               bg=bubble_frame["bg"], fg=self.text_color, font=("Helvetica", 10))
+                               bg=bubble_bg, fg=self.text_color, font=("Helvetica", 10))
         message_text.pack(fill=tk.X)
         
         # Hora del mensaje
-        current_time = datetime.datetime.now().strftime("%H:%M")
+        # current_time = datetime.now().strftime("%H:%M")
         time_label = tk.Label(bubble_frame, text=current_time, font=("Helvetica", 7),
-                             bg=bubble_frame["bg"], fg=self.text_color)
+                             bg=bubble_bg, fg=self.text_color)
         time_label.pack(side=tk.RIGHT, padx=(5, 0), pady=(2, 0))
         
         # Desplazar hacia abajo para mostrar el nuevo mensaje
@@ -309,13 +336,79 @@ class ChatApp:
         # Hacer que el label de hora también responda a los clicks
         time_label.bind("<Button-1>", lambda e, n=name: self.select_chat(n))
     
+    def update_message(self):
+        if self.otherUser != "" and self.otherUser != myUser:
+            data = {
+                "user": myUser,
+                "otherUser": self.otherUser
+            }
+
+            response = requests.post(APIurl + "data", json=data)
+            
+            content = response.text
+
+            if content != "false":
+                self.add_message(content[3].replace('"', ''), self.otherUser, False, content[4])
+
+        self.root.after(500, self.update_message)
+
+    def chat_history(self):
+        data = {
+            "user": myUser,
+            "otherUser": self.otherUser
+        }
+
+        response = requests.post(APIurl + "history", json=data)
+        
+        content = json.loads(response.text)
+
+        for message in content:
+            if message[1] == myUser:
+                self.add_message(message[3], message[1], True, message[4])
+            else:
+                self.add_message(message[3], message[1], False, message[4])
+
+        self.no_history = False
+
     def select_chat(self, name):
         self.current_chat = name
         self.chat_title.config(text=name)
+        self.otherUser = name
+        self.clear_messages()
+        self.chat_history()
         # Aquí normalmente cargarías los mensajes del chat seleccionado
         # Por simplicidad, no implementamos esa funcionalidad en este ejemplo
 
+    def clear_messages(self):
+        """
+        Elimina todos los mensajes mostrados actualmente en el área de chat.
+        """
+        # Destruir todos los widgets hijos en el frame de mensajes
+        for widget in self.messages_frame.winfo_children():
+            widget.destroy()
+        
+        # Actualizar el canvas después de eliminar los mensajes
+        self.root.update_idletasks()
+        
+        # Reiniciar la región de desplazamiento del canvas
+        self.chat_canvas.configure(scrollregion=self.chat_canvas.bbox("all"))
+        
+        # Opcional: Mostrar un mensaje indicando que la conversación está vacía
+        # empty_frame = tk.Frame(self.messages_frame, bg=self.bg_chat)
+        # empty_frame.pack(fill=tk.X, expand=True, pady=20)
+        
+        # empty_label = tk.Label(empty_frame, 
+        #                     text="No hay mensajes en esta conversación",
+        #                     font=("Helvetica", 10, "italic"),
+        #                     fg="#888888", 
+        #                     bg=self.bg_chat)
+        # empty_label.pack(pady=30)
+
 if __name__ == "__main__":
+    myUser = "user2"
+    APIurl = "http://127.0.0.1:8000/"
+    # APIurl = "http://chatwei.ddns.net:19280/"
+
     root = tk.Tk()
     app = ChatApp(root)
     root.mainloop()
