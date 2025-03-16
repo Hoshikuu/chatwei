@@ -43,8 +43,8 @@ class ChatApp:
 
         # Datos de ejemplo
         self.chats = [
-            {"name": "user2", "last_message": self.get_last_message("user2"), "time": self.get_last_time("user2")},
-            {"name": "user1", "last_message": self.get_last_message("user1"), "time": self.get_last_time("user1")},
+            {"name": "user2", "last_message": "", "time": ""},
+            {"name": "user1", "last_message": "", "time": ""},
         ]
         
         # Añadir chats de ejemplo
@@ -345,10 +345,10 @@ class ChatApp:
 
             response = requests.post(APIurl + "data", json=data)
             
-            content = response.text
-
-            if content != "false":
-                self.add_message(content[3].replace('"', ''), self.otherUser, False, content[4])
+            content = json.loads(response.text)
+            
+            if content != False:
+                self.add_message(content[3], self.otherUser, False, content[4])
 
         self.root.after(500, self.update_message)
 
