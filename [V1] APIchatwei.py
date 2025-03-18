@@ -14,6 +14,10 @@ class Default(BaseModel):
 class SendChat(BaseModel):
     data: str
 
+class Hand(BaseModel):
+    receiver: str
+    fase: str
+
 def GetMessage(user, otherUser):
     conn = connect(database)
     cursor = conn.cursor()
@@ -114,6 +118,10 @@ ORDER BY time ASC;
     conn.commit()
     conn.close()
     return resultados
+
+async def HandShake():
+    conn = connect(database)
+    cursor = conn.cursor()
 
 if __name__ == "__main__":
     system(f'fastapi dev "{__file__}"')

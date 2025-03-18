@@ -6,6 +6,7 @@ import json
 
 from weicore.coder import encodeb64
 from weicore.cweiFormater import formater
+from weicore.cipweiV2 import *
 
 class ChatApp:
     def __init__(self, root):
