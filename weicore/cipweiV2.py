@@ -27,12 +27,12 @@ def encriptA(content, chunkLevel, masterKey):
         
         seg = ""
         for charC, charK1, charK2 in zip(chunk, key1, key2):
-            print(charC, charK1, charK2)
-            print(int(format(ord(charC), "08b"), 2), int(format(ord(charK1), "08b"), 2), int(format(ord(charK2), "08b"), 2))
-            seg += chr(abs(int(format(ord(charC), "08b"), 2) + int(format(ord(charK1), "08b"), 2) * 2 - int(format(ord(charK2), "08b"), 2)))
+            if (int(format(ord(charK1), "08b"), 2) * 2) < (int(format(ord(charK2), "08b"), 2)):
+                seg += chr(abs(int(format(ord(charC), "08b"), 2) + int(format(ord(charK1), "08b"), 2) * 3 - int(format(ord(charK2), "08b"), 2)))
+            else: 
+                seg += chr(abs(int(format(ord(charC), "08b"), 2) + int(format(ord(charK1), "08b"), 2) * 2 - int(format(ord(charK2), "08b"), 2)))
         result += seg
         segments += sha512(seg)
-    print("\n\n")
     return f"wei]\n{chr(seed1)}{chr(seed2)}{result}\n{sha512(segments)}"
 
 def encriptB(allContent, chunkLevel, masterKey):
@@ -53,9 +53,10 @@ def encriptB(allContent, chunkLevel, masterKey):
 
         seg = ""
         for charC, charK1, charK2 in zip(chunk, key1, key2):
-            print(charC, charK1, charK2)
-            print(int(format(ord(charC), "08b"), 2), int(format(ord(charK1), "08b"), 2), int(format(ord(charK2), "08b"), 2))
-            seg += chr(abs(int(format(ord(charC), "08b"), 2) + int(format(ord(charK1), "08b"), 2) * 2 - int(format(ord(charK2), "08b"), 2)))
+            if (int(format(ord(charK1), "08b"), 2) * 2) < (int(format(ord(charK2), "08b"), 2)):
+                seg += chr(abs(int(format(ord(charC), "08b"), 2) + int(format(ord(charK1), "08b"), 2) * 3 - int(format(ord(charK2), "08b"), 2)))
+            else:
+                seg += chr(abs(int(format(ord(charC), "08b"), 2) + int(format(ord(charK1), "08b"), 2) * 2 - int(format(ord(charK2), "08b"), 2)))
         result += seg
         segments += sha512(seg)
     checksum = sha512(checksum)
@@ -65,7 +66,6 @@ def encriptB(allContent, chunkLevel, masterKey):
     else:
         print("BAD")
         return "Checksum Problem"
-    print("\n\n")
     return f"wei]\n{chr(seed1)}{chr(seed2)}{result}\n{sha512(segments)}"
 
 def decriptA(allContent, chunkLevel, masterKey):
@@ -86,9 +86,10 @@ def decriptA(allContent, chunkLevel, masterKey):
 
         seg = ""
         for charC, charK1, charK2 in zip(chunk, key1, key2):
-            print(charC, charK1, charK2)
-            print(int(format(ord(charC), "08b"), 2), int(format(ord(charK1), "08b"), 2), int(format(ord(charK2), "08b"), 2))
-            seg += chr(abs(int(format(ord(charC), "08b"), 2) - int(format(ord(charK1), "08b"), 2) * 2 + int(format(ord(charK2), "08b"), 2)))
+            if (int(format(ord(charK1), "08b"), 2) * 2) < (int(format(ord(charK2), "08b"), 2)):
+                seg += chr(abs(int(format(ord(charC), "08b"), 2) - int(format(ord(charK1), "08b"), 2) * 3 + int(format(ord(charK2), "08b"), 2)))
+            else:
+                seg += chr(abs(int(format(ord(charC), "08b"), 2) - int(format(ord(charK1), "08b"), 2) * 2 + int(format(ord(charK2), "08b"), 2)))
         result += seg
         segments += sha512(seg)
     checksum = sha512(checksum)
@@ -98,7 +99,6 @@ def decriptA(allContent, chunkLevel, masterKey):
     else:
         print("BAD")
         return "Checksum Problem"
-    print("\n\n")
     return f"wei]\n{chr(seed1)}{chr(seed2)}{result}\n{sha512(segments)}"
 
 def decriptB(allContent, chunkLevel, masterKey):
@@ -118,9 +118,10 @@ def decriptB(allContent, chunkLevel, masterKey):
 
         seg = ""
         for charC, charK1, charK2 in zip(chunk, key1, key2):
-            print(charC, charK1, charK2)
-            print(int(format(ord(charC), "08b"), 2), int(format(ord(charK1), "08b"), 2), int(format(ord(charK2), "08b"), 2))
-            seg += chr(abs(int(format(ord(charC), "08b"), 2) - int(format(ord(charK1), "08b"), 2) * 2 + int(format(ord(charK2), "08b"), 2)))
+            if (int(format(ord(charK1), "08b"), 2) * 2) < (int(format(ord(charK2), "08b"), 2)):
+                seg += chr(abs(int(format(ord(charC), "08b"), 2) - int(format(ord(charK1), "08b"), 2) * 3 + int(format(ord(charK2), "08b"), 2)))
+            else:
+                seg += chr(abs(int(format(ord(charC), "08b"), 2) - int(format(ord(charK1), "08b"), 2) * 2 + int(format(ord(charK2), "08b"), 2)))
         result += seg
     checksum = sha512(checksum)
 
@@ -129,22 +130,20 @@ def decriptB(allContent, chunkLevel, masterKey):
     else:
         print("BAD")
         return "Checksum Problem"
-    print("\n\n")
     return result
 
-A = encriptA("Hola buenos dias a todos", 16, "secret")
-with open("a", "w+", encoding="UTF-8") as file:
-    file.write(A)
+# A = encriptA("Hola buenos dias a todos", 16, "secret")
+# with open("a", "w+", encoding="UTF-8") as file:
+#     file.write(A)
 
-B = encriptB(A, 16, "gulag")
-with open("b", "w+", encoding="UTF-8") as file:
-    file.write(B)
+# B = encriptB(A, 16, "gulag")
+# with open("b", "w+", encoding="UTF-8") as file:
+#     file.write(B)
 
-C = decriptA(B, 16, "secret")
-with open("c", "w+", encoding="UTF-8") as file:
-    file.write(C)
+# C = decriptA(B, 16, "secret")
+# with open("c", "w+", encoding="UTF-8") as file:
+#     file.write(C)
 
-D = decriptB(C, 16, "gulag")
-with open("d", "w+", encoding="UTF-8") as file:
-    file.write(D)
-
+# D = decriptB(C, 16, "gulag")
+# with open("d", "w+", encoding="UTF-8") as file:
+#     file.write(D)

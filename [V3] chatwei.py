@@ -191,8 +191,8 @@ class ChatApp:
         # Crear canvas y scrollbar para el área de mensajes
         self.chat_canvas = tk.Canvas(self.chat_frame, bg=self.bg_chat, highlightthickness=0)
         self.scrollbar = ttk.Scrollbar(self.chat_frame, orient=tk.VERTICAL, 
-                                      command=self.chat_canvas.yview,
-                                      style="Minimal.Vertical.TScrollbar")
+                                       command=self.chat_canvas.yview,
+                                       style="Minimal.Vertical.TScrollbar")
         self.chat_canvas.configure(yscrollcommand=self.scrollbar.set)
         
         self.scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
