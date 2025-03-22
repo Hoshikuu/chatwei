@@ -18,8 +18,10 @@ def sha512(text):
 class swap(BaseModel):
     chatid: str
     id: str
+    sender: str
     receiver: str
     message: str
+    time: str
     fase: str
 
 # Modelo base para getswap   
@@ -39,19 +41,74 @@ def CreateSwapTable(chatid):
     #* fase 3 = encriptado por usuario 2
     #* fase 4 = desencriptado (contenido en fase3) es un marcador de que ya se ha completado
     sql = f'''
-        CREATE TABLE "{chatid}_swap" (
-        "id"	TEXT NOT NULL UNIQUE,
-        "receiver"	TEXT NOT NULL,
-        "message"	TEXT NOT NULL,
-        "time"      TEXT NOT NULL,
-        "fase"	INTEGER NOT NULL DEFAULT 1,
-	    PRIMARY KEY("id")
+        CREATE TABLE IF NOT EXISTS "{chatid}_swap" (
+        "id" TEXT NOT NULL UNIQUE,
+        "sender" TEXT NOT NULL,
+        "receiver" TEXT NOT NULL,
+        "message" TEXT NOT NULL,
+        "time" TEXT NOT NULL,
+        "fase" INTEGER NOT NULL DEFAULT 1,
+        PRIMARY KEY("id")
     );''' 
     cursor.execute(sql)
     conn.commit()
     
     conn.close()
     
+# Crea una tabla para almacenar los datos que llegaron a la fase 4 de encriptacion, para tenerlos como historial
+def CreateDataTable(chatid):
+    conn = connect(database)
+    cursor = conn.cursor()
+    
+    sql = f'''
+        CREATE TABLE IF NOT EXISTS "{chatid}_data" (
+        "id"	TEXT NOT NULL UNIQUE,
+        "sender"	TEXT NOT NULL,
+        "receiver"	TEXT NOT NULL,
+        "message"	TEXT NOT NULL,
+        "time" TEXT NOT NULL,
+        "fase" INTEGER NOT NULL DEFAULT 4,
+        PRIMARY KEY("id")
+    );'''
+    cursor.execute(sql)
+    conn.commit()
+    
+    conn.close()
+
+# Limpia la tabla de swap en busca de registros con fase 3 para aumentarla a fase 4 y a su vez enviarlas a la tabla de datos para almacenarlas
+#* La tabla swap no se usa para almacenar datos, se usa para intercambiar datos entre medio para asegurar la encriptacion de punta a punta
+def CleanSwapTable(data):
+    conn = connect(database)
+    cursor = conn.cursor()
+    
+    CreateDataTable(data.chatid)
+    
+    # Aumenta la fase a la final
+    sql = f'''
+        UPDATE "{data.chatid}_swap"
+        SET fase = 4
+        WHERE receiver = "{data.receiver}" AND fase = 3;
+    '''
+    cursor.execute(sql)
+    conn.commit()
+
+    sql = f'''
+        INSERT INTO "{data.chatid}_data" (id, sender, receiver, message, time, fase)
+        SELECT * FROM "{data.chatid}_swap"
+        WHERE receiver = "{data.receiver}" AND fase = 4;
+    '''
+    cursor.execute(sql)
+    conn.commit()
+    
+    sql = f'''
+        DELETE FROM "{data.chatid}_swap"
+        WHERE receiver = "{data.receiver}" AND fase = 4;
+    '''
+    cursor.execute(sql)
+    conn.commit()
+    
+    conn.close()
+        
 # Esto se hara cargo de introducir datos en la tabla de swap de cada chat.
 #* Los chats se crean a base de una ID unica de chat que se introducira en una tabla tambien.
 @app.post("/swap")
@@ -63,13 +120,23 @@ async def Swap(data: swap):
 
     # Añadir los datos a la tabla
     sql = f'''
-        INSERT INTO {data.chatid}_swap (id, receiver, message, fase)
-        VALUES ("{data.id}", "{data.receiver}", "{data.message}", "{data.fase}"
-    )'''
+        REPLACE INTO "{data.chatid}_swap" (id, sender, receiver, message, time, fase)  
+        VALUES ("{data.id}", "{data.sender}", "{data.receiver}", "{data.message}", "{data.time}", "{data.fase}"
+    );'''
+    cursor.execute(sql)
+    conn.commit()
+    
+    CreateDataTable(data.chatid)
+    
+    sql = f'''
+        REPLACE INTO "{data.chatid}_data" (id, sender, receiver, message, time, fase)
+        VALUES ("{data.id}", "{data.sender}", "{data.receiver}", "{data.message}", "{data.time}", "{data.fase}"
+    );'''
     cursor.execute(sql)
     conn.commit()
     
     conn.close()
+    return "OK"
 
 # Obtener los datos en la tabla de swap
 @app.post("/getswap")
@@ -91,8 +158,10 @@ async def GetSwap(data: getswap):
     '''
     cursor.execute(sql)
     resultados = json.dumps(cursor.fetchall())
-    
     conn.close()
+    
+    CleanSwapTable(data)
+    
     return resultados
     
 if __name__ == "__main__":
