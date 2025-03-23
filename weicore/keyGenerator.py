@@ -29,5 +29,4 @@ def ConvertKey(imagen, filename):
             else:
                 content += "0"
 
-    with open(filename, "w") as file:
-        file.write(content)
+    return content
