@@ -28,6 +28,15 @@ class swap(BaseModel):
 class getswap(BaseModel):
     chatid: str
     receiver: str
+    
+class login(BaseModel):
+    user: str
+    password: str
+    
+class adduser(BaseModel):
+    user: str
+    password: str
+    email: str
 
 # Crea la tabla de swap para el chat si no existe
 def CreateSwapTable(chatid):
@@ -153,7 +162,7 @@ async def GetSwap(data: getswap):
     CreateSwapTable(data.chatid)
     
     sql = f'''
-        SELECT * FROM {data.chatid}_swap
+        SELECT * FROM "{data.chatid}_swap"
         WHERE receiver = "{data.receiver}"
     '''
     cursor.execute(sql)
@@ -163,6 +172,37 @@ async def GetSwap(data: getswap):
     CleanSwapTable(data)
     
     return resultados
+
+@app.post("/login")
+async def Login(data: login):
+    conn = connect(database)
+    cursor = conn.cursor()
     
+    sql = f'''
+        SELECT password FROM "cwei_users" 
+        WHERE user = "{data.user}";
+    '''
+    cursor.execute(sql)
+    password = cursor.fetchall()[0][0]
+    conn.close()
+    if password == sha512(data.password):
+        return "OK"
+    return "BAD"
+
+@app.post("/adduser")
+async def AddUser(data: adduser):
+    conn = connect(database)
+    cursor = conn.cursor()
+    
+    sql = f'''
+        INSERT INTO "cwei_users" (id, user, password, email)
+        VALUES ("{sha512(data.user)}", "{data.user}", "{sha512(data.password)}", "{data.email}");
+    '''
+    cursor.execute(sql)
+    conn.commit()
+    conn.close()
+    
+    return "OK"
+
 if __name__ == "__main__":
     system(f'fastapi dev "{__file__}"')
