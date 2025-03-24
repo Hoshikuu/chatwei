@@ -124,7 +124,6 @@ def CleanSwapTable(data):
 async def Swap(data: swap):
     conn = connect(database)
     cursor = conn.cursor()
-    
     CreateSwapTable(data.chatid)
 
     # Añadir los datos a la tabla

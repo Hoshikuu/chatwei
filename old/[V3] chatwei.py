@@ -27,7 +27,7 @@ class ChatApp:
         
         # Configuración del tema
         self.root.configure(bg=self.bg_dark)
-        
+        #---------------------------------------------------------------
         # Crear el estilo personalizado para la barra de desplazamiento
         self.create_scrollbar_style()
         
