@@ -11,8 +11,8 @@ from weicore.cipweiV2 import *
 class LoginWindow:
     def __init__(self, root):
         self.root = root
-        self.root.title("ChatWei")
-        self.root.geometry("400x350")  # Aumentado altura para acomodar nuevo botón
+        self.root.title("ChatWei - Login")
+        self.root.geometry(f"400x350+{(root.winfo_screenwidth() - 400) // 2}+{(root.winfo_screenheight() - 450) // 2}")
         self.root.resizable(False, False)
         
         # Configuración tema oscuro
@@ -113,6 +113,7 @@ class LoginWindow:
     
     def open_register(self):
         # Abre la ventana de registro
+        self.root.withdraw()
         register_window = tk.Toplevel(self.root)
         RegisterWindow(register_window, self)
     
@@ -127,14 +128,16 @@ class LoginWindow:
         
         # Vincular el gestor de amigos con el chat
         chat_app.set_friends_manager(friends_manager)
+        friends_manager.set_chat_app(chat_app)
 
 class RegisterWindow:
     def __init__(self, root, login_window):
         self.root = root
         self.login_window = login_window
         self.root.title("ChatWei - Registro")
-        self.root.geometry("400x450")
+        self.root.geometry(f"400x450+{(root.winfo_screenwidth() - 400) // 2}+{(root.winfo_screenheight() - 550) // 2}")
         self.root.resizable(False, False)
+        self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
         
         # Usar los mismos colores que la ventana de login
         self.bg_color = self.login_window.bg_color
@@ -245,7 +248,10 @@ class RegisterWindow:
         
         # Simulamos proceso de registro
         response = requests.post(APIurl + "adduser", json=data).text
-        print(response)
+        
+        if response == '"BAD"':
+            self.status_label.config(text="Usuario o email existentes", fg="#ff5252")
+            return
         
         # Una vez registrado exitosamente
         self.status_label.config(text="Usuario creado con éxito", fg="#66bb6a")
@@ -253,6 +259,11 @@ class RegisterWindow:
         time.sleep(1)
         
         # Cerrar ventana de registro y volver al login
+        self.login_window.root.deiconify()
+        self.root.destroy()
+    
+    def on_closing(self):
+        self.login_window.root.deiconify()
         self.root.destroy()
 
 class ChatApp:
@@ -260,19 +271,34 @@ class ChatApp:
         # Implementación simplificada
         self.root = root
         self.root.title("ChatWei - Chat")
-        self.root.geometry("600x400")
+        self.root.geometry(f"900x600+{(root.winfo_screenwidth() - 1300) // 2}+{(root.winfo_screenheight() - 700) // 2}")
         self.root.configure(bg="#1e1e1e")
+        self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
         
     def set_friends_manager(self, friends_manager):
         self.friends_manager = friends_manager
+        
+    def on_closing(self):
+        self.friends_manager.root.destroy()
+        self.root.destroy()
+        root.destroy()
 
 class FriendsManager:
     def __init__(self, root):
         # Implementación simplificada
         self.root = root
         self.root.title("ChatWei - Contactos")
-        self.root.geometry("300x400")
+        self.root.geometry(f"400x600+{(root.winfo_screenwidth() + 500) // 2}+{(root.winfo_screenheight() - 700) // 2}")
         self.root.configure(bg="#1e1e1e")
+        self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
+    
+    def set_chat_app(self, chat_app):
+        self.chat_app = chat_app
+    
+    def on_closing(self):
+        self.chat_app.root.destroy()
+        self.root.destroy()
+        root.destroy()
 
 if __name__ == "__main__":
     myUser = "user2"

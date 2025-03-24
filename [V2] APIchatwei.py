@@ -194,6 +194,18 @@ async def AddUser(data: adduser):
     conn = connect(database)
     cursor = conn.cursor()
     
+    try:
+        sql = f'''
+            SELECT 1 FROM "cwei_users" 
+            WHERE user = "{data.user}" OR email = "{data.email}";
+        '''
+        cursor.execute(sql)
+        resultados = cursor.fetchall()[0][0]
+        if resultados == 1:
+            return "BAD"
+    except Exception:
+        pass
+    
     sql = f'''
         INSERT INTO "cwei_users" (id, user, password, email)
         VALUES ("{sha512(data.user)}", "{data.user}", "{sha512(data.password)}", "{data.email}");
