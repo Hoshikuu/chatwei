@@ -7,7 +7,7 @@ import json
 from datetime import datetime
 
 from weicore.coder import encodeb64
-from weicore.keyGenerator import *
+from weicore.cweiKey import *
 from weicore.cipweiV2 import *
 
 class LoginWindow:

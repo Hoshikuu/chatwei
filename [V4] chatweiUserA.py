@@ -7,7 +7,7 @@ import json
 from datetime import datetime
 
 from weicore.coder import encodeb64
-from weicore.keyGenerator import *
+from weicore.cweiKey import *
 from weicore.cipweiV2 import *
 
 class LoginWindow:
@@ -500,7 +500,7 @@ class ChatApp:
         message = self.message_entry.get("1.0", tk.END).strip()
         if message:
             self.add_message(message, "Tú", True, datetime.now().strftime("%Y-%m-%d-%H-%M"))
-            message = encriptA(message, 16, "gulag")
+            message = encriptA(message, 16, self.key)
             data = {
                 "chatid": self.current_chat,
                 "id": sha512(message),
@@ -615,7 +615,7 @@ class ChatApp:
                 "id": content[0],
                 "sender": self.user,
                 "receiver": self.other_user,
-                "message": encriptB(content[3], 16, "gulag"),
+                "message": encriptB(content[3], 16, self.key),
                 "time": datetime.now().strftime("%Y-%m-%d-%H-%M"),
                 "fase": "2"
             }
@@ -626,13 +626,13 @@ class ChatApp:
                 "id": content[0],
                 "sender": self.user,
                 "receiver": self.other_user,
-                "message": decriptA(content[3], 16, "gulag"),
+                "message": decriptA(content[3], 16, self.key),
                 "time": datetime.now().strftime("%Y-%m-%d-%H-%M"),
                 "fase": "3"
             }
             requests.post(APIurl + "swap", json=data)
         if content[5] == "3":
-            message = decriptB(content[3], 16, "gulag")
+            message = decriptB(content[3], 16, self.key)
             self.add_message(message, self.other_user, False, datetime.now().strftime("%Y-%m-%d-%H-%M"))
 
         
@@ -660,6 +660,7 @@ class ChatApp:
         self.current_chat = id
         self.chat_title.config(text=name)
         self.other_user = other_user
+        self.key = "gulag"
         self.clear_messages()
         # self.chat_history()
         # Aquí normalmente cargarías los mensajes del chat seleccionado
