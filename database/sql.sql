@@ -4,7 +4,7 @@ CREATE TABLE "id1_swap" (
 	"receiver"	TEXT NOT NULL,
 	"message"	TEXT NOT NULL,
 	"time"	TEXT NOT NULL,
-	"fase"	INTEGER NOT NULL DEFAULT 1,
+	"fase"	TEXT NOT NULL DEFAULT 1,
 	PRIMARY KEY("id")
 );
 
@@ -14,7 +14,7 @@ CREATE TABLE "id1_data" (
 	"receiver"	TEXT NOT NULL,
 	"message"	TEXT NOT NULL,
 	"time"	TEXT NOT NULL,
-	"fase"	INTEGER NOT NULL DEFAULT 4,
+	"fase"	TEXT NOT NULL DEFAULT 4,
 	PRIMARY KEY("id")
 );
 

@@ -56,7 +56,7 @@ def CreateSwapTable(chatid):
         "receiver" TEXT NOT NULL,
         "message" TEXT NOT NULL,
         "time" TEXT NOT NULL,
-        "fase" INTEGER NOT NULL DEFAULT 1,
+        "fase" TEXT NOT NULL DEFAULT 1,
         PRIMARY KEY("id")
     );''' 
     cursor.execute(sql)
@@ -76,7 +76,7 @@ def CreateDataTable(chatid):
         "receiver"	TEXT NOT NULL,
         "message"	TEXT NOT NULL,
         "time" TEXT NOT NULL,
-        "fase" INTEGER NOT NULL DEFAULT 4,
+        "fase" TEXT NOT NULL DEFAULT 4,
         PRIMARY KEY("id")
     );'''
     cursor.execute(sql)
@@ -96,22 +96,28 @@ def CleanSwapTable(data):
     sql = f'''
         UPDATE "{data.chatid}_swap"
         SET fase = 4
-        WHERE receiver = "{data.receiver}" AND fase = 3;
+        WHERE receiver = "{data.receiver}" AND fase = "3";
     '''
     cursor.execute(sql)
     conn.commit()
 
     sql = f'''
-        INSERT INTO "{data.chatid}_data" (id, sender, receiver, message, time, fase)
         SELECT * FROM "{data.chatid}_swap"
-        WHERE receiver = "{data.receiver}" AND fase = 4;
+        WHERE receiver = "{data.receiver}" AND fase = "4";
     '''
     cursor.execute(sql)
-    conn.commit()
+    resultados = cursor.fetchall()
+    if resultados != [] and resultados[0][5] == "4":
+        sql = f'''
+            INSERT INTO "{data.chatid}_data" (id, sender, receiver, message, time, fase)
+            VALUES ("{sha512(resultados[0][0])}", "{resultados[0][1]}", "{resultados[0][2]}", "{resultados[0][3]}", "{resultados[0][4]}", "{resultados[0][5]}")
+        '''
+        cursor.execute(sql)
+        conn.commit()
     
     sql = f'''
         DELETE FROM "{data.chatid}_swap"
-        WHERE receiver = "{data.receiver}" AND fase = 4;
+        WHERE receiver = "{data.receiver}" AND fase = "4";
     '''
     cursor.execute(sql)
     conn.commit()
@@ -136,12 +142,13 @@ async def Swap(data: swap):
     
     CreateDataTable(data.chatid)
     
-    sql = f'''
-        REPLACE INTO "{data.chatid}_data" (id, sender, receiver, message, time, fase)
-        VALUES ("{data.id}", "{data.sender}", "{data.receiver}", "{data.message}", "{data.time}", "{data.fase}"
-    );'''
-    cursor.execute(sql)
-    conn.commit()
+    if data.fase == "1":
+        sql = f'''
+            REPLACE INTO "{data.chatid}_data" (id, sender, receiver, message, time, fase)
+            VALUES ("{data.id}", "{data.sender}", "{data.receiver}", "{data.message}", "{data.time}", "{data.fase}"
+        );'''
+        cursor.execute(sql)
+        conn.commit()
     
     conn.close()
     return "OK"
@@ -159,17 +166,16 @@ async def GetSwap(data: getswap):
     cursor = conn.cursor()
     
     CreateSwapTable(data.chatid)
-    
     sql = f'''
         SELECT * FROM "{data.chatid}_swap"
         WHERE receiver = "{data.receiver}"
     '''
     cursor.execute(sql)
-    resultados = json.dumps(cursor.fetchall())
+    resultados = cursor.fetchall()
     conn.close()
     
     CleanSwapTable(data)
-    
+
     return resultados
 
 @app.post("/login")

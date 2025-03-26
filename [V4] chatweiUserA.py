@@ -300,7 +300,7 @@ class ChatApp:
         self.create_chat_area()
         self.create_input_area()
         
-        # self.update_message()
+        
         
         self.other_user = ""
         self.user = user
@@ -315,6 +315,8 @@ class ChatApp:
         
         # Chat actual
         self.current_chat = ""
+        
+        self.update_message()
         
     def create_scrollbar_style(self):
         # Estilo para los widgets
@@ -479,14 +481,17 @@ class ChatApp:
         self.send_button = tk.Button(self.input_frame, text="Enviar", font=("Helvetica", 10),
                                     bg=self.accent_color, fg=self.text_color,
                                     activebackground="#0086E3", activeforeground=self.text_color,
-                                    relief=tk.FLAT, command=self.send_message)
+                                    relief=tk.FLAT, command=self.send_message_on_return)
         self.send_button.pack(side=tk.RIGHT, padx=5)
         
         # Vincular la tecla Enter para enviar el mensaje
         self.message_entry.bind("<Return>", self.send_message_on_return)
         
-    def send_message_on_return(self, event):
+    def send_message_on_return(self, event = None):
         # Enviar mensaje con Enter, pero permitir Shift+Enter para nueva línea
+        if event == None:
+            self.send_message()
+            return "break"  # Evitar el salto de línea predeterminado
         if not event.state & 0x1: # Shift no está presionado
             self.send_message()
             return "break"  # Evitar el salto de línea predeterminado
@@ -495,13 +500,13 @@ class ChatApp:
         message = self.message_entry.get("1.0", tk.END).strip()
         if message:
             self.add_message(message, "Tú", True, datetime.now().strftime("%Y-%m-%d-%H-%M"))
-
+            message = encriptA(message, 16, "gulag")
             data = {
                 "chatid": self.current_chat,
                 "id": sha512(message),
                 "sender": self.user,
                 "receiver": self.other_user,
-                "message": encriptA(message),
+                "message": message,
                 "time": datetime.now().strftime("%Y-%m-%d-%H-%M"),
                 "fase": "1"
             }
@@ -589,19 +594,48 @@ class ChatApp:
         time_label.bind("<Button-1>", lambda e, n=name: self.select_chat(id, other_user, name))
     
     def update_message(self):
-        if self.other_user != "" and self.other_user != self.user:
+        if self.current_chat == "":
+            self.root.after(500, self.update_message)
+            return
+        
+        data = {
+            "chatid": self.current_chat,
+            "receiver": self.user
+        }
+
+        response = requests.post(APIurl + "getswap", json=data)
+        if response.text == "[]":
+            self.root.after(500, self.update_message)
+            return 
+        
+        content = json.loads(response.text)[0]
+        if content[5] == "1":
             data = {
-                "user": self.user,
-                "other_user": self.other_user
+                "chatid": self.current_chat,
+                "id": content[0],
+                "sender": self.user,
+                "receiver": self.other_user,
+                "message": encriptB(content[3], 16, "gulag"),
+                "time": datetime.now().strftime("%Y-%m-%d-%H-%M"),
+                "fase": "2"
             }
+            requests.post(APIurl + "swap", json=data)
+        if content[5] == "2":
+            data = {
+                "chatid": self.current_chat,
+                "id": content[0],
+                "sender": self.user,
+                "receiver": self.other_user,
+                "message": decriptA(content[3], 16, "gulag"),
+                "time": datetime.now().strftime("%Y-%m-%d-%H-%M"),
+                "fase": "3"
+            }
+            requests.post(APIurl + "swap", json=data)
+        if content[5] == "3":
+            message = decriptB(content[3], 16, "gulag")
+            self.add_message(message, self.other_user, False, datetime.now().strftime("%Y-%m-%d-%H-%M"))
 
-            response = requests.post(APIurl + "data", json=data)
-            
-            content = json.loads(response.text)
-            
-            if content != False:
-                self.add_message(content[3], self.other_user, False, content[4])
-
+        
         self.root.after(500, self.update_message)
 
     def chat_history(self):
@@ -627,7 +661,7 @@ class ChatApp:
         self.chat_title.config(text=name)
         self.other_user = other_user
         self.clear_messages()
-        self.chat_history()
+        # self.chat_history()
         # Aquí normalmente cargarías los mensajes del chat seleccionado
         # Por simplicidad, no implementamos esa funcionalidad en este ejemplo
 
@@ -683,7 +717,7 @@ class FriendsManager:
 
 if __name__ == "__main__":
     APIurl = "http://127.0.0.1:8000/"
-    chatsFile = "chats.json"
+    chatsFile = "chatsA.json"
     
     root = tk.Tk()
     app = LoginWindow(root)
