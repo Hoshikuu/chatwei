@@ -61,11 +61,9 @@ def encriptB(allContent, chunkLevel, masterKey):
         segments += sha512(seg)
     checksum = sha512(checksum)
 
-    if checksum == prevChecksum:
-        print("OK")
-    else:
-        print("BAD")
+    if checksum != prevChecksum:
         return "Checksum Problem"
+    
     return f"wei]\n{chr(seed1)}{chr(seed2)}{result}\n{sha512(segments)}"
 
 def decriptA(allContent, chunkLevel, masterKey):
@@ -94,11 +92,9 @@ def decriptA(allContent, chunkLevel, masterKey):
         segments += sha512(seg)
     checksum = sha512(checksum)
 
-    if checksum == prevChecksum:
-        print("OK")
-    else:
-        print("BAD")
+    if checksum != prevChecksum:
         return "Checksum Problem"
+    
     return f"wei]\n{chr(seed1)}{chr(seed2)}{result}\n{sha512(segments)}"
 
 def decriptB(allContent, chunkLevel, masterKey):
@@ -125,11 +121,9 @@ def decriptB(allContent, chunkLevel, masterKey):
         result += seg
     checksum = sha512(checksum)
 
-    if checksum == prevChecksum:
-        print("OK")
-    else:
-        print("BAD")
+    if checksum != prevChecksum:
         return "Checksum Problem"
+        
     return result
 
 # A = encriptA("Hola buenos dias a todos", 16, "secret")

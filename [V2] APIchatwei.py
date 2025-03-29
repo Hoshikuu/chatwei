@@ -37,6 +37,9 @@ class adduser(BaseModel):
     user: str
     password: str
     email: str
+    
+class history(BaseModel):
+    chatid: str
 
 # Crea la tabla de swap para el chat si no existe
 def CreateSwapTable(chatid):
@@ -220,6 +223,21 @@ async def AddUser(data: adduser):
     conn.close()
     
     return "OK"
+
+@app.post("/history")
+async def History(data: history):
+    conn = connect(database)
+    cursor = conn.cursor()
+    
+    sql = f'''
+        SELECT * FROM "{data.chatid}_data"
+        ORDER BY time ASC;
+    '''
+    cursor.execute(sql)
+    resultados = cursor.fetchall()
+    conn.close()
+    
+    return resultados
 
 if __name__ == "__main__":
     system(f'fastapi dev "{__file__}"')

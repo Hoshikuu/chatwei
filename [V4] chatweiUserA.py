@@ -5,6 +5,7 @@ import threading
 import requests
 import json
 from datetime import datetime
+from pathlib import Path
 
 from weicore.coder import encodeb64
 from weicore.cweiKey import *
@@ -499,7 +500,7 @@ class ChatApp:
     def send_message(self):
         message = self.message_entry.get("1.0", tk.END).strip()
         if message:
-            self.add_message(message, "Tú", True, datetime.now().strftime("%Y-%m-%d-%H-%M"))
+            self.add_message(message, "Tú", True, datetime.now().strftime("%Y-%m-%d-%H-%M-%S-%f"))
             message = encriptA(message, 16, self.key)
             data = {
                 "chatid": self.current_chat,
@@ -507,7 +508,7 @@ class ChatApp:
                 "sender": self.user,
                 "receiver": self.other_user,
                 "message": message,
-                "time": datetime.now().strftime("%Y-%m-%d-%H-%M"),
+                "time": datetime.now().strftime("%Y-%m-%d-%H-%M-%S-%f"),
                 "fase": "1"
             }
             requests.post(APIurl + "swap", json=data)
@@ -616,7 +617,7 @@ class ChatApp:
                 "sender": self.user,
                 "receiver": self.other_user,
                 "message": encriptB(content[3], 16, self.key),
-                "time": datetime.now().strftime("%Y-%m-%d-%H-%M"),
+                "time": datetime.now().strftime("%Y-%m-%d-%H-%M-%S-%f"),
                 "fase": "2"
             }
             requests.post(APIurl + "swap", json=data)
@@ -627,21 +628,20 @@ class ChatApp:
                 "sender": self.user,
                 "receiver": self.other_user,
                 "message": decriptA(content[3], 16, self.key),
-                "time": datetime.now().strftime("%Y-%m-%d-%H-%M"),
+                "time": datetime.now().strftime("%Y-%m-%d-%H-%M-%S-%f"),
                 "fase": "3"
             }
             requests.post(APIurl + "swap", json=data)
         if content[5] == "3":
             message = decriptB(content[3], 16, self.key)
-            self.add_message(message, self.other_user, False, datetime.now().strftime("%Y-%m-%d-%H-%M"))
+            self.add_message(message, self.other_user, False, datetime.now().strftime("%Y-%m-%d-%H-%M-%S-%f"))
 
         
         self.root.after(500, self.update_message)
 
     def chat_history(self):
         data = {
-            "user": self.user,
-            "other_user": self.other_user
+            "chatid": self.current_chat
         }
 
         response = requests.post(APIurl + "history", json=data)
@@ -649,20 +649,18 @@ class ChatApp:
         content = json.loads(response.text)
 
         for message in content:
-            if message[1] == self.user:
-                self.add_message(message[3], message[1], True, message[4])
-            else:
-                self.add_message(message[3], message[1], False, message[4])
-
-        self.no_history = False
+            if message[1] == self.user and message[5] == "1":
+                self.add_message(decriptB(message[3], 16, self.key), message[1], True, message[4])
+            elif message[2] == self.user and message[5] == "4":
+                self.add_message(decriptB(message[3], 16, self.key), message[1], False, message[4])
 
     def select_chat(self, id, other_user, name):
         self.current_chat = id
         self.chat_title.config(text=name)
         self.other_user = other_user
-        self.key = "gulag"
+        self.key = GetKey(Path(f"chatkey/{id}.bmp"))
         self.clear_messages()
-        # self.chat_history()
+        self.chat_history()
         # Aquí normalmente cargarías los mensajes del chat seleccionado
         # Por simplicidad, no implementamos esa funcionalidad en este ejemplo
 
@@ -698,6 +696,8 @@ class ChatApp:
         self.friends_manager.root.destroy()
         self.root.destroy()
         root.destroy()
+
+#! FALTA SOLO EL FRIENDS MANAGER TODO LO DEMAS ESTA BASTANTE BIEN YA
 
 class FriendsManager:
     def __init__(self, root):

@@ -18,8 +18,8 @@ def GenerateKey(width, height, filename):
 
     imageShuffle.save(filename)
 
-def ConvertKey(key):
-    imagen = openI(key)
+def GetKey(path):
+    imagen = openI(path)
     width, height = imagen.size
     content = ""
 
@@ -30,26 +30,16 @@ def ConvertKey(key):
                 content += "1"
             else:
                 content += "0"
-    return content
+                
+    content = content.replace("\n", "")
 
-def TranslateKey(key):
-    contenido = key.replace("\n", "")
-
-    bytes_list = [contenido[i:i+8] for i in range(0, len(contenido), 8)]
+    bytes_list = [content[i:i+8] for i in range(0, len(content), 8)]
 
     texto = ""
     for byte in bytes_list:
         if len(byte) == 8:
             caracter = chr(int(byte, 2))
             texto += caracter
-    return texto
-
-def Base64Key(key):
-    keyBase64 = b64encode(key.encode("utf-8")).decode("utf-8")
+            
+    keyBase64 = b64encode(texto.encode("utf-8")).decode("utf-8")
     return keyBase64
-
-GenerateKey(255, 255, "1111111111.bmp")
-
-print(ConvertKey("1111111111.bmp"))
-
-print(Base64Key(TranslateKey(ConvertKey("1111111111.bmp"))))
