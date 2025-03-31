@@ -6,6 +6,7 @@ import requests
 import json
 from datetime import datetime
 from pathlib import Path
+from os.path import isfile
 
 from weicore.coder import encodeb64
 from weicore.cweiKey import *
@@ -308,7 +309,10 @@ class ChatApp:
 
         # Datos de ejemplo
         with open(chatsFile, "r", encoding="utf-8") as file:
-            self.chats = json.load(file)
+            try:
+                self.chats = json.load(file)
+            except json.decoder.JSONDecodeError:
+                self.chats = []
         
         # Añadir chats de ejemplo
         for chat in self.chats:
@@ -645,8 +649,10 @@ class ChatApp:
         }
 
         response = requests.post(APIurl + "history", json=data)
-        
-        content = json.loads(response.text)
+        try:
+            content = json.loads(response.text)
+        except json.decoder.JSONDecodeError:
+            content = []
 
         for message in content:
             if message[1] == self.user and message[5] == "1":
@@ -707,6 +713,47 @@ class FriendsManager:
         self.root.geometry(f"400x600+{(root.winfo_screenwidth() + 500) // 2}+{(root.winfo_screenheight() - 700) // 2}")
         self.root.configure(bg="#1e1e1e")
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
+        
+        self.create_chat_file()
+        self.read_chat_file()
+        # self.add_chat_file("a", "user2")
+    
+    def create_chat_file(self):
+        if not isfile(chatsFile):
+            with open(chatsFile, "w+", encoding="utf-8") as file:
+                file.write()
+            
+    def read_chat_file(self):
+        with open(chatsFile, "r", encoding="utf-8") as file:
+            try:
+                self.chats = json.load(file)
+            except json.decoder.JSONDecodeError:
+                self.chats = []
+    
+    def add_chat_file(self, user, otherUser):
+        data = {
+            "user1": user,
+            "user2": otherUser
+        }
+        response = requests.post(APIurl + "addchat", json=data).text.replace('"', '')
+        
+        GenerateKey(256, 256, f"chatkey/{response}.bmp")
+        
+        self.read_chat_file()
+        
+        chats = [chat for chat in self.chats]
+        chat = {
+            'id': response,
+            'user': otherUser,
+            'name': otherUser,
+            'last_message': '',
+            'time': ''
+        }
+        chats.append(chat)
+        chats = json.dumps(chats)
+        
+        with open(chatsFile, "w+", encoding="utf-8") as file:
+            file.write(chats)
     
     def set_chat_app(self, chat_app):
         self.chat_app = chat_app
@@ -718,7 +765,7 @@ class FriendsManager:
 
 if __name__ == "__main__":
     APIurl = "http://127.0.0.1:8000/"
-    chatsFile = "chatsA.json"
+    chatsFile = "chats.json"
     
     root = tk.Tk()
     app = LoginWindow(root)

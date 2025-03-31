@@ -5,6 +5,8 @@ import threading
 import requests
 import json
 from datetime import datetime
+from pathlib import Path
+from os.path import isfile
 
 from weicore.coder import encodeb64
 from weicore.cweiKey import *
@@ -307,7 +309,10 @@ class ChatApp:
 
         # Datos de ejemplo
         with open(chatsFile, "r", encoding="utf-8") as file:
-            self.chats = json.load(file)
+            try:
+                self.chats = json.load(file)
+            except json.decoder.JSONDecodeError:
+                self.chats = []
         
         # Añadir chats de ejemplo
         for chat in self.chats:
@@ -499,15 +504,15 @@ class ChatApp:
     def send_message(self):
         message = self.message_entry.get("1.0", tk.END).strip()
         if message:
-            self.add_message(message, "Tú", True, datetime.now().strftime("%Y-%m-%d-%H-%M"))
-            message = encriptA(message, 16, "secret")
+            self.add_message(message, "Tú", True, datetime.now().strftime("%Y-%m-%d-%H-%M-%S-%f"))
+            message = encriptA(message, 16, self.key)
             data = {
                 "chatid": self.current_chat,
                 "id": sha512(message),
                 "sender": self.user,
                 "receiver": self.other_user,
                 "message": message,
-                "time": datetime.now().strftime("%Y-%m-%d-%H-%M"),
+                "time": datetime.now().strftime("%Y-%m-%d-%H-%M-%S-%f"),
                 "fase": "1"
             }
             requests.post(APIurl + "swap", json=data)
@@ -615,8 +620,8 @@ class ChatApp:
                 "id": content[0],
                 "sender": self.user,
                 "receiver": self.other_user,
-                "message": encriptB(content[3], 16, "secret"),
-                "time": datetime.now().strftime("%Y-%m-%d-%H-%M"),
+                "message": encriptB(content[3], 16, self.key),
+                "time": datetime.now().strftime("%Y-%m-%d-%H-%M-%S-%f"),
                 "fase": "2"
             }
             requests.post(APIurl + "swap", json=data)
@@ -626,42 +631,42 @@ class ChatApp:
                 "id": content[0],
                 "sender": self.user,
                 "receiver": self.other_user,
-                "message": decriptA(content[3], 16, "secret"),
-                "time": datetime.now().strftime("%Y-%m-%d-%H-%M"),
+                "message": decriptA(content[3], 16, self.key),
+                "time": datetime.now().strftime("%Y-%m-%d-%H-%M-%S-%f"),
                 "fase": "3"
             }
             requests.post(APIurl + "swap", json=data)
         if content[5] == "3":
-            message = decriptB(content[3], 16, "secret")
-            self.add_message(message, self.other_user, False, datetime.now().strftime("%Y-%m-%d-%H-%M"))
+            message = decriptB(content[3], 16, self.key)
+            self.add_message(message, self.other_user, False, datetime.now().strftime("%Y-%m-%d-%H-%M-%S-%f"))
 
         
         self.root.after(500, self.update_message)
 
     def chat_history(self):
         data = {
-            "user": self.user,
-            "other_user": self.other_user
+            "chatid": self.current_chat
         }
 
         response = requests.post(APIurl + "history", json=data)
-        
-        content = json.loads(response.text)
+        try:
+            content = json.loads(response.text)
+        except json.decoder.JSONDecodeError:
+            content = []
 
         for message in content:
-            if message[1] == self.user:
-                self.add_message(message[3], message[1], True, message[4])
-            else:
-                self.add_message(message[3], message[1], False, message[4])
-
-        self.no_history = False
+            if message[1] == self.user and message[5] == "1":
+                self.add_message(decriptB(message[3], 16, self.key), message[1], True, message[4])
+            elif message[2] == self.user and message[5] == "4":
+                self.add_message(decriptB(message[3], 16, self.key), message[1], False, message[4])
 
     def select_chat(self, id, other_user, name):
         self.current_chat = id
         self.chat_title.config(text=name)
         self.other_user = other_user
+        self.key = GetKey(Path(f"chatkey/{id}.bmp"))
         self.clear_messages()
-        # self.chat_history()
+        self.chat_history()
         # Aquí normalmente cargarías los mensajes del chat seleccionado
         # Por simplicidad, no implementamos esa funcionalidad en este ejemplo
 
@@ -698,6 +703,8 @@ class ChatApp:
         self.root.destroy()
         root.destroy()
 
+#! FALTA SOLO EL FRIENDS MANAGER TODO LO DEMAS ESTA BASTANTE BIEN YA
+
 class FriendsManager:
     def __init__(self, root):
         # Implementación simplificada
@@ -706,6 +713,47 @@ class FriendsManager:
         self.root.geometry(f"400x600+{(root.winfo_screenwidth() + 500) // 2}+{(root.winfo_screenheight() - 700) // 2}")
         self.root.configure(bg="#1e1e1e")
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
+        
+        self.create_chat_file()
+        self.read_chat_file()
+        # self.add_chat_file("user2", "a")
+    
+    def create_chat_file(self):
+        if not isfile(chatsFile):
+            with open(chatsFile, "w+", encoding="utf-8") as file:
+                file.write()
+            
+    def read_chat_file(self):
+        with open(chatsFile, "r", encoding="utf-8") as file:
+            try:
+                self.chats = json.load(file)
+            except json.decoder.JSONDecodeError:
+                self.chats = []
+    
+    def add_chat_file(self, user, otherUser):
+        data = {
+            "user1": user,
+            "user2": otherUser
+        }
+        response = requests.post(APIurl + "addchat", json=data).text.replace('"', '')
+        
+        GenerateKey(256, 256, f"chatkey/{response}.bmp")
+        
+        self.read_chat_file()
+        
+        chats = [chat for chat in self.chats]
+        chat = {
+            'id': response,
+            'user': otherUser,
+            'name': otherUser,
+            'last_message': '',
+            'time': ''
+        }
+        chats.append(chat)
+        chats = json.dumps(chats)
+        
+        with open(chatsFile, "w+", encoding="utf-8") as file:
+            file.write(chats)
     
     def set_chat_app(self, chat_app):
         self.chat_app = chat_app

@@ -40,6 +40,10 @@ class adduser(BaseModel):
     
 class history(BaseModel):
     chatid: str
+    
+class addchat(BaseModel):
+    user1: str
+    user2: str
 
 # Crea la tabla de swap para el chat si no existe
 def CreateSwapTable(chatid):
@@ -229,6 +233,8 @@ async def History(data: history):
     conn = connect(database)
     cursor = conn.cursor()
     
+    CreateDataTable()
+    
     sql = f'''
         SELECT * FROM "{data.chatid}_data"
         ORDER BY time ASC;
@@ -238,6 +244,34 @@ async def History(data: history):
     conn.close()
     
     return resultados
+
+@app.post("/addchat")
+async def AddChat(data: addchat):
+    conn = connect(database)
+    cursor = conn.cursor()
+    
+    sql = f'''
+    SELECT id FROM "cwei_chats"
+    WHERE user1 = "{data.user1}" AND user2 = "{data.user2}" OR user1 = "{data.user2}" AND user2 = "{data.user1}"
+    '''
+    cursor.execute(sql)
+    respuesta = cursor.fetchall()
+    print(respuesta, type(respuesta))
+    
+    if respuesta != []:
+        conn.close()
+        return respuesta[0][0]
+        
+    sql = f'''
+    INSERT INTO "cwei_chats" (id, user1, user2)
+    VALUES ("{sha512(data.user1 + data.user2)}", "{data.user1}", "{data.user2}")
+    '''
+    conn.execute(sql)
+    
+    conn.commit()
+    conn.close()
+    
+    return sha512(data.user1 + data.user2)
 
 if __name__ == "__main__":
     system(f'fastapi dev "{__file__}"')
