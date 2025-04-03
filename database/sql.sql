@@ -18,13 +18,13 @@ CREATE TABLE "id1_data" (
 	PRIMARY KEY("id")
 );
 
-CREATE TABLE "cwei_chats" (
+CREATE TABLE "!cwei_chats" (
 	"id"	TEXT NOT NULL UNIQUE,
 	"active"	INTEGER NOT NULL DEFAULT 1,
 	PRIMARY KEY("id")
 );
 
-CREATE TABLE "cwei_users" (
+CREATE TABLE "!cwei_users" (
 	"id"	TEXT NOT NULL UNIQUE,
 	"user"	TEXT NOT NULL UNIQUE,
 	"password"	TEXT NOT NULL,

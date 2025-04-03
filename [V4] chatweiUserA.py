@@ -129,7 +129,7 @@ class LoginWindow:
         
         # Crear ventana para el gestor de amigos
         friends_root = tk.Toplevel()
-        friends_manager = FriendsManager(friends_root)
+        friends_manager = FriendsManager(friends_root, username)
         
         # Vincular el gestor de amigos con el chat
         chat_app.set_friends_manager(friends_manager)
@@ -306,16 +306,7 @@ class ChatApp:
         self.other_user = ""
         self.user = user
 
-        # Datos de ejemplo
-        with open(chatsFile, "r", encoding="utf-8") as file:
-            try:
-                self.chats = json.load(file)
-            except json.decoder.JSONDecodeError:
-                self.chats = []
-        
-        # Añadir chats de ejemplo
-        for chat in self.chats:
-            self.add_chat_button(chat["id"], chat["user"], chat["name"], chat["last_message"], chat["time"])
+        self.update_chat_button()
         
         # Chat actual
         self.current_chat = ""
@@ -502,7 +493,7 @@ class ChatApp:
     
     def send_message(self):
         message = self.message_entry.get("1.0", tk.END).strip()
-        if message:
+        if message and self.current_chat != "":
             self.add_message(message, "Tú", True, datetime.now().strftime("%Y-%m-%d-%H-%M-%S-%f"))
             message = encriptA(message, 16, self.key)
             data = {
@@ -610,6 +601,21 @@ class ChatApp:
         time_label.pack(side=tk.RIGHT, padx=5)
         # Hacer que el label de hora también responda a los clicks
         time_label.bind("<Button-1>", lambda e, n=name: self.select_chat(id, other_user, name))
+    
+    def update_chat_button(self):
+        
+        for widget in self.chats_frame.winfo_children():
+            widget.destroy()
+        
+        with open(chatsFile, "r", encoding="utf-8") as file:
+            try:
+                self.chats = json.load(file)
+            except json.decoder.JSONDecodeError:
+                self.chats = []
+        
+        # Añadir chats de ejemplo
+        for chat in self.chats:
+            self.add_chat_button(chat["id"], chat["user"], chat["name"], chat["last_message"], chat["time"])
     
     def update_message(self):
         if self.current_chat == "":
@@ -719,7 +725,7 @@ class ChatApp:
 #! FALTA SOLO EL FRIENDS MANAGER TODO LO DEMAS ESTA BASTANTE BIEN YA
 
 class FriendsManager:
-    def __init__(self, root):
+    def __init__(self, root, user):
         self.root = root
         self.root.title("ChatWei - Contactos")
         self.root.geometry(f"400x600+{(root.winfo_screenwidth() + 500) // 2}+{(root.winfo_screenheight() - 700) // 2}")
@@ -740,6 +746,8 @@ class FriendsManager:
         self.input_text = tk.StringVar()
         self.friends_list = []
         self.current_view = "main"  # main, requests
+        
+        self.user = user
         
         # Custom styling for dark theme
         self.style = ttk.Style()
@@ -822,6 +830,8 @@ class FriendsManager:
         list_frame = tk.Frame(self.requests_frame, bg=self.secondary_bg)
         list_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=(0, 10))
         
+        
+        
         # Demo requests
         for i in range(3):
             request_frame = tk.Frame(list_frame, bg=self.secondary_bg, padx=5, pady=5, relief=tk.FLAT, bd=1)
@@ -851,6 +861,7 @@ class FriendsManager:
         self.current_view = "main"
         self.requests_frame.pack_forget()
         self.main_frame.pack(fill=tk.BOTH, expand=True)
+        self.read_chat_file()
         
         # Clear previous friends list
         for widget in self.friends_container.winfo_children():
@@ -867,7 +878,7 @@ class FriendsManager:
             
             # Username
             username_label = tk.Label(friend_frame, text=friend["user"], bg=self.secondary_bg, fg=self.text_color, font=("Helvetica", 11))
-            username_label.pack(side=tk.LEFT, padx=5, fill=tk.X, expand=True, anchor=tk.W)
+            username_label.pack(side=tk.LEFT, padx=5, fill=tk.X, expand=False, anchor=tk.W) # Original expand=True
             
             # Chat button
             chat_button = tk.Button(friend_frame, text="Chat", bg=self.accent_color, fg=self.text_color, 
@@ -888,8 +899,14 @@ class FriendsManager:
     def send_message(self):
         text = self.input_text.get()
         if text:
-            print(f"Texto enviado: {text}")
+            self.add_chat_file(self.user, text)
             self.input_text.set("")
+            self.show_main_view()
+            self.read_chat_file()
+            for chat in self.friends_list:
+                if chat["user"] == text:
+                    self.chat_app.update_chat_button()
+                    self.chat_app.select_chat(chat["id"], text, chat["name"])
 
     def accept_request(self, index):
         print(f"Solicitud aceptada: {index}")
@@ -943,7 +960,7 @@ class FriendsManager:
         
         self.read_chat_file()
         
-        chats = [chat for chat in self.chats]
+        chats = [chat for chat in self.friends_list]
         chat = {
             'id': response,
             'user': otherUser,

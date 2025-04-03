@@ -191,7 +191,7 @@ async def Login(data: login):
     cursor = conn.cursor()
     
     sql = f'''
-        SELECT password FROM "cwei_users" 
+        SELECT password FROM "!cwei_users" 
         WHERE user = "{data.user}";
     '''
     cursor.execute(sql)
@@ -208,7 +208,7 @@ async def AddUser(data: adduser):
     
     try:
         sql = f'''
-            SELECT 1 FROM "cwei_users" 
+            SELECT 1 FROM "!cwei_users" 
             WHERE user = "{data.user}" OR email = "{data.email}";
         '''
         cursor.execute(sql)
@@ -219,7 +219,7 @@ async def AddUser(data: adduser):
         pass
     
     sql = f'''
-        INSERT INTO "cwei_users" (id, user, password, email)
+        INSERT INTO "!cwei_users" (id, user, password, email)
         VALUES ("{sha512(data.user)}", "{data.user}", "{sha512(data.password)}", "{data.email}");
     '''
     cursor.execute(sql)
@@ -251,7 +251,7 @@ async def AddChat(data: addchat):
     cursor = conn.cursor()
     
     sql = f'''
-    SELECT id FROM "cwei_chats"
+    SELECT id FROM "!cwei_chats"
     WHERE user1 = "{data.user1}" AND user2 = "{data.user2}" OR user1 = "{data.user2}" AND user2 = "{data.user1}"
     '''
     cursor.execute(sql)
@@ -263,7 +263,7 @@ async def AddChat(data: addchat):
         return respuesta[0][0]
         
     sql = f'''
-    INSERT INTO "cwei_chats" (id, user1, user2)
+    INSERT INTO "!cwei_chats" (id, user1, user2)
     VALUES ("{sha512(data.user1 + data.user2)}", "{data.user1}", "{data.user2}")
     '''
     conn.execute(sql)
@@ -272,6 +272,12 @@ async def AddChat(data: addchat):
     conn.close()
     
     return sha512(data.user1 + data.user2)
+
+@app.post("/swapaddchat")
+async def SwapAddChat(data: addchat):
+    conn = connect(database)
+    cursor = conn.cursor()
+    
 
 if __name__ == "__main__":
     system(f'fastapi dev "{__file__}"')
