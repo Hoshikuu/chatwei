@@ -2,9 +2,7 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 from os import system
 from sqlite3 import connect
-from weicore.coder import decodeb64
 from hashlib import sha3_512
-import json
 
 app = FastAPI()
 database = "database/chatweiV2.db"

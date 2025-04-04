@@ -1,4 +1,4 @@
-CREATE TABLE "id1_swap" (
+CREATE TABLE "_swap" (
 	"id"	TEXT NOT NULL UNIQUE,
 	"sender"	TEXT NOT NULL,
 	"receiver"	TEXT NOT NULL,
@@ -8,7 +8,7 @@ CREATE TABLE "id1_swap" (
 	PRIMARY KEY("id")
 );
 
-CREATE TABLE "id1_data" (
+CREATE TABLE "_data" (
 	"id"	TEXT NOT NULL UNIQUE,
 	"sender"	TEXT NOT NULL,
 	"receiver"	TEXT NOT NULL,
@@ -20,7 +20,9 @@ CREATE TABLE "id1_data" (
 
 CREATE TABLE "!cwei_chats" (
 	"id"	TEXT NOT NULL UNIQUE,
-	"active"	INTEGER NOT NULL DEFAULT 1,
+	"user1"	TEXT NOT NULL,
+	"user2"	TEXT NOT NULL,
+	"active"	TEXT NOT NULL DEFAULT 0,
 	PRIMARY KEY("id")
 );
 
