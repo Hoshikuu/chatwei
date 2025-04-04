@@ -809,7 +809,7 @@ class FriendsManager:
         toolbar_frame.pack(fill=tk.X, side=tk.BOTTOM, padx=10, pady=10)
         
         requests_button = tk.Button(toolbar_frame, text="Solicitudes", bg=self.accent_color, fg=self.text_color,
-                                  command=self.show_requests_view, relief=tk.FLAT, padx=10)
+                                  command=self.create_requests_frame, relief=tk.FLAT, padx=10)
         requests_button.pack(side=tk.LEFT, padx=5)
         
     def create_requests_frame(self):
@@ -830,19 +830,21 @@ class FriendsManager:
         list_frame = tk.Frame(self.requests_frame, bg=self.secondary_bg)
         list_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=(0, 10))
         
+        data = {
+            "me": self.user,
+        }
+        response = json.loads(requests.post(APIurl + "getchat", json=data).text)
         
-        
-        # Demo requests
-        for i in range(3):
+        for chat in response:
             request_frame = tk.Frame(list_frame, bg=self.secondary_bg, padx=5, pady=5, relief=tk.FLAT, bd=1)
             request_frame.pack(fill=tk.X, pady=2)
             
             # Avatar - using a simple colored label instead of PIL
-            avatar_label = self.create_simple_avatar(request_frame, f"req{i}")
+            avatar_label = self.create_simple_avatar(request_frame, f"{chat[1]}")
             avatar_label.pack(side=tk.LEFT, padx=5)
             
             # Username
-            username_label = tk.Label(request_frame, text=f"request_user{i}", bg=self.secondary_bg, fg=self.text_color, font=("Helvetica", 11))
+            username_label = tk.Label(request_frame, text=f"{chat[1]}", bg=self.secondary_bg, fg=self.text_color, font=("Helvetica", 11))
             username_label.pack(side=tk.LEFT, padx=5, fill=tk.X, expand=True, anchor=tk.W)
             
             # Buttons
@@ -850,12 +852,18 @@ class FriendsManager:
             buttons_frame.pack(side=tk.RIGHT)
             
             accept_button = tk.Button(buttons_frame, text="✓", bg="#2ecc71", fg=self.text_color, 
-                                     relief=tk.FLAT, width=2, command=lambda i=i: self.accept_request(i))
+                                     relief=tk.FLAT, width=2, command=lambda i=chat[1]: self.accept_request(i))
             accept_button.pack(side=tk.LEFT, padx=2)
             
             reject_button = tk.Button(buttons_frame, text="✗", bg="#e74c3c", fg=self.text_color, 
-                                     relief=tk.FLAT, width=2, command=lambda i=i: self.reject_request(i))
+                                     relief=tk.FLAT, width=2, command=lambda i=chat[1]: self.reject_request(i))
             reject_button.pack(side=tk.LEFT, padx=2)
+            
+        if response == []:
+            no_response = tk.Label(list_frame, text="No Hay Solicitudes", bg=self.secondary_bg, fg=self.text_color, font=("Helvetica", 11))
+            no_response.pack(side=tk.LEFT, padx=5, fill=tk.X, expand=True, anchor=tk.W)
+            
+        self.show_requests_view()
 
     def show_main_view(self):
         self.current_view = "main"
@@ -899,7 +907,7 @@ class FriendsManager:
     def send_message(self):
         text = self.input_text.get()
         if text:
-            self.add_chat_file(self.user, text)
+            self.add_chat_file(self.user, text, "0")
             self.input_text.set("")
             self.show_main_view()
             self.read_chat_file()
@@ -909,9 +917,15 @@ class FriendsManager:
                     self.chat_app.select_chat(chat["id"], text, chat["name"])
 
     def accept_request(self, index):
-        print(f"Solicitud aceptada: {index}")
+        self.add_chat_file(index, self.user, "1")
         self.show_main_view()
-
+        self.read_chat_file()
+        for chat in self.friends_list:
+            if chat["user"] == index:
+                self.chat_app.update_chat_button()
+                self.chat_app.select_chat(chat["id"], index, chat["name"])
+        
+########################
     def reject_request(self, index):
         print(f"Solicitud rechazada: {index}")
 
@@ -949,10 +963,11 @@ class FriendsManager:
             except json.decoder.JSONDecodeError:
                 self.friends_list = []
     
-    def add_chat_file(self, user, otherUser):
+    def add_chat_file(self, user, otherUser, active):
         data = {
             "user1": user,
-            "user2": otherUser
+            "user2": otherUser,
+            "active": active
         }
         response = requests.post(APIurl + "addchat", json=data).text.replace('"', '')
         
@@ -963,8 +978,8 @@ class FriendsManager:
         chats = [chat for chat in self.friends_list]
         chat = {
             'id': response,
-            'user': otherUser,
-            'name': otherUser,
+            'user': user,
+            'name': user,
             'last_message': '',
             'time': ''
         }

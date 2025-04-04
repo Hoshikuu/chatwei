@@ -44,6 +44,10 @@ class history(BaseModel):
 class addchat(BaseModel):
     user1: str
     user2: str
+    active: str
+    
+class getchat(BaseModel):
+    me: str
 
 # Crea la tabla de swap para el chat si no existe
 def CreateSwapTable(chatid):
@@ -252,32 +256,41 @@ async def AddChat(data: addchat):
     
     sql = f'''
     SELECT id FROM "!cwei_chats"
-    WHERE user1 = "{data.user1}" AND user2 = "{data.user2}" OR user1 = "{data.user2}" AND user2 = "{data.user1}"
+    WHERE user1 = "{data.user1}" AND user2 = "{data.user2}" AND active = "1" OR user1 = "{data.user2}" AND user2 = "{data.user1}" AND active = "1"
     '''
     cursor.execute(sql)
     respuesta = cursor.fetchall()
-    print(respuesta, type(respuesta))
     
     if respuesta != []:
         conn.close()
         return respuesta[0][0]
-        
+    
     sql = f'''
-    INSERT INTO "!cwei_chats" (id, user1, user2)
-    VALUES ("{sha512(data.user1 + data.user2)}", "{data.user1}", "{data.user2}")
+    REPLACE INTO "!cwei_chats" (id, user1, user2, active)
+    VALUES ("{sha512(data.user1 + data.user2)}", "{data.user1}", "{data.user2}", {data.active})
     '''
     conn.execute(sql)
     
     conn.commit()
     conn.close()
-    
+
     return sha512(data.user1 + data.user2)
 
-@app.post("/swapaddchat")
-async def SwapAddChat(data: addchat):
+@app.post("/getchat")
+async def GetChat(data: getchat):
     conn = connect(database)
     cursor = conn.cursor()
     
+    sql = f'''
+    SELECT * FROM "!cwei_chats"
+    WHERE user2 = "{data.me}" AND active = 0
+    '''
+    cursor.execute(sql)
+    resultados = cursor.fetchall()
+    print(resultados)
+    conn.close()
+    
+    return resultados
 
 if __name__ == "__main__":
     system(f'fastapi dev "{__file__}"')
