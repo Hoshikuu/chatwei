@@ -1004,13 +1004,13 @@ class FriendsManager:
         root.destroy()
 
 if __name__ == "__main__":
-    APIurl = "http://127.0.0.1:8000/"
+    APIurl = "http://chatwei.ddns.net:19280/"
     chatsFile = "chats.json"
     keyDir = "chatkey"
     if not isfile(chatsFile):
         with open (chatsFile, "w+", encoding="utf-8") as file:
             pass
-    if not isdir(chatsFile):
+    if not isdir(keyDir):
         mkdir(keyDir)
     
     root = tk.Tk()

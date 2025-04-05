@@ -235,7 +235,7 @@ async def History(data: history):
     conn = connect(database)
     cursor = conn.cursor()
     
-    CreateDataTable()
+    CreateDataTable(data.chatid)
     
     sql = f'''
         SELECT * FROM "{data.chatid}_data"
