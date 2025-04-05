@@ -21,7 +21,7 @@ You can find the latest compiled versions of ChatWei in the [Releases](../../rel
 ## 🛠️ Features
 
 - ✅ User creation and management  
-- ✅ Real-time chat interface  
+- ✅ Real-time chat interface
 - ✅ API-based communication with the database  
 - ✅ Simple encryption for messages (via CipWei)  
 - ✅ Basic UI and local client  

@@ -1,13 +1,12 @@
 import tkinter as tk
 from tkinter import ttk
-import time
-import requests
-import json
+from requests import post
+from json import load, loads, dumps
+from json.decoder import JSONDecodeError
 from datetime import datetime
 from pathlib import Path
 from os.path import isfile
 from random import seed, randint
-
 from weicore.cweiKey import *
 from weicore.cipweiV2 import *
 
@@ -105,7 +104,7 @@ class LoginWindow:
                 "password": sha512(password)
             }
             
-            response = requests.post(APIurl + "login", json=data).text
+            response = post(APIurl + "login", json=data).text
             if response == '"OK"':
                 self.root.withdraw()
                 self.open_main_windows(username)
@@ -250,7 +249,7 @@ class RegisterWindow:
         }
         
         # Simulamos proceso de registro
-        response = requests.post(APIurl + "adduser", json=data).text
+        response = post(APIurl + "adduser", json=data).text
         
         if response == '"BAD"':
             self.status_label.config(text="Usuario o email existentes", fg="#ff5252")
@@ -259,7 +258,6 @@ class RegisterWindow:
         # Una vez registrado exitosamente
         self.status_label.config(text="Usuario creado con éxito", fg="#66bb6a")
         self.root.update()
-        time.sleep(1)
         
         # Cerrar ventana de registro y volver al login
         self.login_window.root.deiconify()
@@ -503,7 +501,7 @@ class ChatApp:
                 "time": datetime.now().strftime("%Y-%m-%d-%H-%M-%S-%f"),
                 "fase": "1"
             }
-            requests.post(APIurl + "swap", json=data)
+            post(APIurl + "swap", json=data)
 
             self.message_entry.delete("1.0", tk.END)
             # Asegurar que el scroll baje completamente para mostrar el mensaje más reciente
@@ -607,8 +605,8 @@ class ChatApp:
         
         with open(chatsFile, "r", encoding="utf-8") as file:
             try:
-                self.chats = json.load(file)
-            except json.decoder.JSONDecodeError:
+                self.chats = load(file)
+            except JSONDecodeError:
                 self.chats = []
         
         # Añadir chats de ejemplo
@@ -625,12 +623,12 @@ class ChatApp:
             "receiver": self.user
         }
 
-        response = requests.post(APIurl + "getswap", json=data)
+        response = post(APIurl + "getswap", json=data)
         if response.text == "[]":
             self.root.after(500, self.update_message)
             return 
         
-        content = json.loads(response.text)[0]
+        content = loads(response.text)[0]
         if content[5] == "1":
             data = {
                 "chatid": self.current_chat,
@@ -641,7 +639,7 @@ class ChatApp:
                 "time": datetime.now().strftime("%Y-%m-%d-%H-%M-%S-%f"),
                 "fase": "2"
             }
-            requests.post(APIurl + "swap", json=data)
+            post(APIurl + "swap", json=data)
         if content[5] == "2":
             data = {
                 "chatid": self.current_chat,
@@ -652,7 +650,7 @@ class ChatApp:
                 "time": datetime.now().strftime("%Y-%m-%d-%H-%M-%S-%f"),
                 "fase": "3"
             }
-            requests.post(APIurl + "swap", json=data)
+            post(APIurl + "swap", json=data)
         if content[5] == "3":
             message = decriptB(content[3], 16, self.key)
             self.add_message(message, self.other_user, False, datetime.now().strftime("%Y-%m-%d-%H-%M-%S-%f"))
@@ -665,10 +663,10 @@ class ChatApp:
             "chatid": self.current_chat
         }
 
-        response = requests.post(APIurl + "history", json=data)
+        response = post(APIurl + "history", json=data)
         try:
-            content = json.loads(response.text)
-        except json.decoder.JSONDecodeError:
+            content = loads(response.text)
+        except JSONDecodeError:
             content = []
 
         for message in content:
@@ -831,7 +829,7 @@ class FriendsManager:
         data = {
             "me": self.user,
         }
-        response = json.loads(requests.post(APIurl + "getchat", json=data).text)
+        response = loads(post(APIurl + "getchat", json=data).text)
         
         for chat in response:
             request_frame = tk.Frame(list_frame, bg=self.secondary_bg, padx=5, pady=5, relief=tk.FLAT, bd=1)
@@ -957,8 +955,8 @@ class FriendsManager:
     def read_chat_file(self):
         with open(chatsFile, "r", encoding="utf-8") as file:
             try:
-                self.friends_list = json.load(file)
-            except json.decoder.JSONDecodeError:
+                self.friends_list = load(file)
+            except JSONDecodeError:
                 self.friends_list = []
     
     def add_chat_file(self, user, otherUser, active):
@@ -967,7 +965,7 @@ class FriendsManager:
             "user2": otherUser,
             "active": active
         }
-        response = requests.post(APIurl + "addchat", json=data).text.replace('"', '')
+        response = post(APIurl + "addchat", json=data).text.replace('"', '')
         
         GenerateKey(256, 256, f"chatkey/{response}.bmp")
         
@@ -991,7 +989,7 @@ class FriendsManager:
                 'time': ''
             }
         chats.append(chat)
-        chats = json.dumps(chats)
+        chats = dumps(chats)
         
         with open(chatsFile, "w+", encoding="utf-8") as file:
             file.write(chats)

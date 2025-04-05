@@ -5,7 +5,7 @@ from sqlite3 import connect
 from hashlib import sha3_512
 
 app = FastAPI()
-database = "database/chatweiV2.db"
+database = "database/chatwei.db"
 
 def sha512(text):
     string = str(text)
