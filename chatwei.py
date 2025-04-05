@@ -1004,7 +1004,7 @@ class FriendsManager:
         root.destroy()
 
 if __name__ == "__main__":
-    APIurl = "http://chatwei.ddns.net:19280/"
+    APIurl = "http://chatwei.ddns.net:19280/" # Poner esto en http://127.0.0.1/ si se usa la api en local
     chatsFile = "chats.json"
     keyDir = "chatkey"
     if not isfile(chatsFile):
