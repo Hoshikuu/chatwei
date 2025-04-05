@@ -291,4 +291,4 @@ async def GetChat(data: getchat):
     return resultados
 
 if __name__ == "__main__":
-    system(f'fastapi dev "{__file__}"')
+    system(f'fastapi run "{__file__}"')

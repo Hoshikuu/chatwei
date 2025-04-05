@@ -5,7 +5,8 @@ from json import load, loads, dumps
 from json.decoder import JSONDecodeError
 from datetime import datetime
 from pathlib import Path
-from os.path import isfile
+from os import mkdir
+from os.path import isfile, isdir
 from random import seed, randint
 from weicore.cweiKey import *
 from weicore.cipweiV2 import *
@@ -679,7 +680,7 @@ class ChatApp:
         self.current_chat = id
         self.chat_title.config(text=name)
         self.other_user = other_user
-        self.key = GetKey(Path(f"chatkey/{id}.bmp"))
+        self.key = GetKey(Path(f"{keyDir}/{id}.bmp"))
         self.clear_messages()
         self.chat_history()
         # Aquí normalmente cargarías los mensajes del chat seleccionado
@@ -967,7 +968,7 @@ class FriendsManager:
         }
         response = post(APIurl + "addchat", json=data).text.replace('"', '')
         
-        GenerateKey(256, 256, f"chatkey/{response}.bmp")
+        GenerateKey(256, 256, f"{keyDir}/{response}.bmp")
         
         self.read_chat_file()
         
@@ -1005,6 +1006,12 @@ class FriendsManager:
 if __name__ == "__main__":
     APIurl = "http://127.0.0.1:8000/"
     chatsFile = "chats.json"
+    keyDir = "chatkey"
+    if not isfile(chatsFile):
+        with open (chatsFile, "w+", encoding="utf-8") as file:
+            pass
+    if not isdir(chatsFile):
+        mkdir(keyDir)
     
     root = tk.Tk()
     app = LoginWindow(root)
